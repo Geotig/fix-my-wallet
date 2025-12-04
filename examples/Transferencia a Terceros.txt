@@ -1,0 +1,818 @@
+Delivered-To: tiglesias@gmail.com
+Received: by 2002:ab2:58a:0:b0:2df:d6a6:acfb with SMTP id 10csp4474519lqd;
+        Wed, 3 Dec 2025 06:54:00 -0800 (PST)
+X-Google-Smtp-Source: AGHT+IGWZbnrEcoGnIf85bdkrtv4svl0a9QuFqRKaw7wpoBTqq6dQAHCgyEI8tdcgDsfIbsWDzyG
+X-Received: by 2002:a05:600c:a105:b0:477:9890:4528 with SMTP id 5b1f17b1804b1-47926f75f2dmr54224125e9.2.1764773639940;
+        Wed, 03 Dec 2025 06:53:59 -0800 (PST)
+ARC-Seal: i=1; a=rsa-sha256; t=1764773639; cv=none;
+        d=google.com; s=arc-20240605;
+        b=VoZiRKDMtt7X7Qew4PLGg6J2qoj+9VhAV7W20Z3mDaaFR3mgeDzRNn5MitnSia44U3
+         e/2P6jaz7eqydWnuLuDgvZs+jBU2d1FKQgJjV5678yt2EyS10tK5Iv/L4yf+7OyPJcVY
+         eyxZDCNcZlVzcIlIZFPlVoPbGH+OipxyIXwxulfDrFaaKVgxAdu8Szp4FcDkyziPCdTY
+         EqKT5tDKmtQbihH64qCpk2HL1QdDUoIQiQPlhPN8oQrfE/7+xNruxbPB2DsOJQJxPZ3T
+         OUzeua/eqS47F6uKuYKgD/mjgBu4z4TAGhol0kcGJf+MGtat2oc+eMzSjZaODwXpZ432
+         T+6g==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20240605;
+        h=content-transfer-encoding:mime-version:subject:message-id:to:from
+         :date:dkim-signature;
+        bh=YQJq2dBkSbebhBndWRX/naQdIYd01nA/0EL3FhJIFWY=;
+        fh=g/QsUhIzHS3g8+TSMSUvf3WEoBBJccRLyMNjZScNBT0=;
+        b=MfZx7SByx+KWvFQtZOjfLVGNBrbS/F8XQxYDO/MVzarfYcCSkQaul/mWEg18eZVOuu
+         +dGI/F4NhZOXywc/jufqxzSV7obfzYjKtg5EqhOr02NfUEBgU2Yde10XfJrzDOoeiQ9w
+         Xi9qp0BZNty9xSPSFQQqRgufih3yj5Jo4rOYmGMVoCN3WBb4WjlR3OHM3RuZgDyTErDK
+         Ugx8HEi/wdLK75i6fnSArNMhrSkvr/0WXZg3LlAYkBqG9PsmrR0fNaNQzDml9iUWOxmy
+         Fjkb1rkeVETVNZ8pZcHl/GIupddVqIsA8hqGtfTRz9TTRXrSmEpWXRv6BYMAYAdSsLVs
+         Lq5Q==;
+        dara=google.com
+ARC-Authentication-Results: i=1; mx.google.com;
+       dkim=pass header.i=@bancochile.cl header.s=BCH04072019LGVL header.b=BpSGO6kg;
+       spf=pass (google.com: domain of prvs=64327f4b25=serviciodetransferencias@bancochile.cl designates 200.14.130.136 as permitted sender) smtp.mailfrom="prvs=64327f4b25=serviciodetransferencias@bancochile.cl";
+       dmarc=pass (p=REJECT sp=REJECT dis=NONE) header.from=bancochile.cl
+Return-Path: <prvs=64327f4b25=serviciodetransferencias@bancochile.cl>
+Received: from bchag2pplgvl.bancochile.cl (ag2pplgvl.bancochile.cl. [200.14.130.136])
+        by mx.google.com with ESMTPS id ffacd0b85a97d-42e1c5bcfcesi8187724f8f.160.2025.12.03.06.53.59
+        for <tiglesias@gmail.com>
+        (version=TLS1_2 cipher=ECDHE-ECDSA-AES128-GCM-SHA256 bits=128/128);
+        Wed, 03 Dec 2025 06:53:59 -0800 (PST)
+Received-SPF: pass (google.com: domain of prvs=64327f4b25=serviciodetransferencias@bancochile.cl designates 200.14.130.136 as permitted sender) client-ip=200.14.130.136;
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@bancochile.cl header.s=BCH04072019LGVL header.b=BpSGO6kg;
+       spf=pass (google.com: domain of prvs=64327f4b25=serviciodetransferencias@bancochile.cl designates 200.14.130.136 as permitted sender) smtp.mailfrom="prvs=64327f4b25=serviciodetransferencias@bancochile.cl";
+       dmarc=pass (p=REJECT sp=REJECT dis=NONE) header.from=bancochile.cl
+Received: from pps.filterd (bchag2pplgvl.bancochile.cl [127.0.0.1])
+	by bchag2pplgvl.bancochile.cl (8.18.1.2/8.18.1.2) with ESMTP id 5B3DwnKp028023
+	for <tiglesias@gmail.com>; Wed, 3 Dec 2025 11:50:11 -0300
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=bancochile.cl;
+ h=content-transfer-encoding : content-type : date : from : message-id :
+ mime-version : subject : to; s=BCH04072019LGVL;
+ bh=YQJq2dBkSbebhBndWRX/naQdIYd01nA/0EL3FhJIFWY=;
+ b=BpSGO6kgnrL7kgHDD392dcXYi3pVMl39hmUexLXN7CNnna2AtFu1CQbzVlc5hU4vvsDr
+ bmq1YIXzVuFDXrBm8UG32Vq75vuBZq4SyDHSnzi9h+LK9xXubAuTyGdO7tw/eudJWkFz
+ mVVUvCIBPksDSZQ4N/HAKRSOZkbUOgqm+vvKYXCbum2exqa8/FpjpyLi+y4iWiRmGMBn
+ JVtXgSOOSiY3BXk0PDdilJg1UrAsWsjLQV+vRhH4uVzDaU/kwH04KtJg3QWm9Y6+wMfP
+ lu+wWMzFPD7gmzyexJNvFW/neMBytY6+B+iEce9nLjFz/d1dq4jp+1h1j7s11uaKBOAE 5Q== 
+Received: from el08cn07.bch.bancodechile.cl ([10.20.31.112])
+	by bchag2pplgvl.bancochile.cl (PPS) with ESMTP id 4asx27g0tx-6858
+	for <tiglesias@gmail.com>; Wed, 03 Dec 2025 11:50:10 -0300
+Date: Wed, 3 Dec 2025 11:53:57 -0300 (CLST)
+From: serviciodetransferencias@bancochile.cl
+To: tiglesias@gmail.com
+Message-ID: <299422569.122657.1764773637275@el08cn07.bch.bancodechile.cl>
+Subject: Transferencia a Terceros
+MIME-Version: 1.0
+Content-Type: text/html; charset=iso-8859-1
+Content-Transfer-Encoding: 7bit
+
+<?xml version="1.0"encoding="UTF-8"?>
+<!DOCTYPE html
+    PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="es" xmlns="http://www.w3.org/1999/xhtml" style="margin: 0; padding: 0; background-color: #eeeeee;">
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>Banco de Chile | Mi Banco</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;700&display=swap" rel="stylesheet">
+    <style type="text/css">
+        img {
+            border: 0;
+            height: auto;
+            line-height: 100%;
+            outline: none;
+            text-decoration: none;
+            -ms-interpolation-mode: bicubic;
+        }
+
+        body {
+            height: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+        }
+
+        body,
+        table,
+        td,
+        a {
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+        }
+
+       
+        table,
+        td {
+            mso-table-lspace: 0pt;
+            mso-table-rspace: 0pt;
+        }
+
+        #backgroundTable {
+            margin: 0;
+            padding: 0;
+            width: 100% !important;
+        }
+
+        .ExternalClass {
+            width: 100%;
+        }
+
+        a,
+        a:link,
+        a:visited {
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .ExternalClass,
+        .ExternalClass p,
+        .ExternalClass span,
+        .ExternalClass font,
+        .ExternalClass td,
+        .ExternalClass div {
+            line-height: 100%;
+        }
+
+        #outlook a {
+            padding: 0;
+        }
+
+        a[x-apple-data-detectors] {
+            color: inherit !important;
+            text-decoration: none !important;
+            font-size: inherit !important;
+            font-family: inherit !important;
+            font-weight: inherit !important;
+            line-height: inherit !important;
+        }
+
+        div[style*="margin: 16px 0;"] {
+            margin: 0 !important;
+        }
+        a.disable-link {
+            pointer-events: none !important;
+            cursor: text !important;
+            text-decoration: none !important;
+        }
+
+        a.disable-link:hover {
+            text-decoration: none !important;
+        }
+
+        .wrapper table {
+            width: 100% !important;
+        }
+    </style>
+</head>
+<body
+    style="font-family: 'Nunito Sans', sans-serif, serif, EmojiFont, wf_segoe-ui_normal, Segoe UI, Segoe WP, Tahoma, Arial; -webkit-font-smoothing: antialiased !important; -moz-osx-font-smoothing: grayscale!important; -webkit-text-size-adjust: 100% !important; -ms-text-size-adjust:100% !important; width: 100% !important; height: 100% !important; margin: 0; padding: 0; font-weight: normal; font-size: 16px; mso-line-height-rule:exactly; color: #52677B">
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" height="100%" width="100%"
+        id="backgroundTable">
+        <tr>
+            <td>
+                <!--  Internal Header  -->
+<table role="presentation" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0"
+    style="width: 100%; margin: 0; padding: 0; border: none;border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt; ">
+    <tr>
+        <td style="display: block !important; max-width: 520px !important; margin: 0 auto 0 auto; padding: 24px 40px; mso-line-height-rule:exactly;">
+            <div role="banner">
+                <table role="presentation" bgcolor="#FFFFFF" cellpadding="0" cellspacing="0" border="0"
+                    style="width: 100%; margin: 0; padding: 0; border: none;border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt;">
+                    <tr>
+                        <td style="margin: 0; padding: 0;"> <img src="https://servicios.bancochile.cl/imagenes/movil/correo/mails-assets/v2/logo_bch.png"
+                                alt="Logo Banco De Chile" height="70px"
+                                style="margin: 0; padding: 0; -ms-interpolation-mode:bicubic; height:70px; max-height:70px;" />
+                        </td>
+                        <td style="margin: 0; padding: 0 0 0 16px; text-align: right;"> <img
+                                src="https://servicios.bancochile.cl/imagenes/movil/correo/mails-assets/v2/mi-banco/bch_app.png" alt="Icono App Mi Banco" height="70px"
+                                style="margin: 0; padding: 0; -ms-interpolation-mode:bicubic; height:70px; max-height:70px;" />
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </td>
+    </tr>
+</table>                <!--  Internal Body  -->
+<table cellpadding="0" cellspacing="0" border="0"
+    style="width: 100%; margin: 0; padding: 0; border: none;border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt;">
+    <tr>
+        <td bgcolor="#FFFFFF"
+            style="display: block !important; max-width: 520px !important; margin: 0 auto 0 auto; padding: 12px 40px 20px 40px;">
+            <table align="center" cellpadding="0" cellspacing="0" border="0"
+                style="width: 100%; margin: 0 0 24px 0; padding: 0; border: none;border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt;">
+                <tbody>
+                    <tr>
+                        <td
+                            style="color:#0A1861; margin: 0 0 10px 0; padding: 0 0 16px 0; font-weight: normal; line-height: 32px; font-size: 26px; mso-line-height-rule:exactly;">
+                            Comprobante de Transferencia a terceros </td>
+                    </tr>
+                    <tr>
+                        <td
+                            style="color: #2A333D; margin: 0 0 10px 0; padding: 0 0 16px 0; font-weight: normal; line-height: 24px; mso-line-height-rule:exactly;">
+                            Estimado(a): <b>Tomas Iglesias</b> <br>
+
+                        </td>
+                    </tr>
+                    <tr>
+                        <td
+                            style="color: #2A333D; margin: 0 0 24px 0; padding: 0; line-height: 24px; mso-line-height-rule:exactly;">
+
+
+                            Te informamos que has realizado una Transferencia a terceros en forma exitosa
+                            con el siguiente detalle:
+
+
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- START - CARD RESUMEN BLUE BACKGROUND Y BORDER -->
+
+
+
+
+            <table align="center" border="0" cellpadding="0" cellspacing="0" bgcolor="#FFFFF"
+                style="padding: 0; margin: 0 0 16px 0; width:100%; border-radius:16px;  border-color: #DDE5FF; border-right-color: #DDE5FF; border-bottom-color: #DDE5FF; border-left-color: #DDE5FF; border-top-style: solid; border-right-style: solid; border-bottom-style: solid; border-left-style: solid; border-top-width: 1px; border-right-width: 1px; border-bottom-width: 1px; border-left-width: 1px; overflow: hidden;">
+                <tbody>
+                    <tr>
+                        <td style="border-collapse:collapse; padding: 1px; border:none">
+                            <table align="center" border="0" cellpadding="0" cellspacing="0" bgcolor="#ffffff"
+                                style="width:100%; border-radius: 0; border-collapse:collapse;">
+                                <tbody>
+                                    <tr>
+                                        <td style="border-collapse:collapse; padding: 16px; border:none">
+                                            <!-- START - CARD RESUMEN BLUE CONTENT -->
+                                            <table cellpadding="0" cellspacing="0" border="0" width="100%"
+                                                style="font-size: 14px; width: 100%; padding: 0; margin: 0; line-height: 24px; mso-line-height-rule:exactly;"
+                                                bgcolor="#ffffff">
+
+                                                <!-- modelo-->
+                                                <tr>
+                                                    <td
+                                                        style="font-size: 14px; margin: 0; padding: 4px 0; color: #2A333D; font-weight: bold;">
+                                                        Origen
+                                                    </td>
+
+                                                </tr>
+
+                                                <!-- fecha -->
+                                                <tr>
+                                                    <td
+                                                        style="vertical-align:top; margin: 0; padding: 4px 0; color: #52677B; font-weight: regular;">
+                                                        Tipo de Cuenta
+                                                    </td>
+                                                    <td
+                                                        style="max-width: 150px; margin: 0; padding: 4px 0; text-align: right; color: #2A333D">
+                                                        Cuenta Corriente
+                                                    </td>
+                                                </tr>
+
+                                                <!-- hora-->
+                                                <tr>
+                                                    <td
+                                                        style="vertical-align:top; margin: 0; padding: 4px 0; color: #52677B; font-weight: regular;">
+                                                        N&ordm; de Cuenta
+                                                    </td>
+                                                    <td
+                                                        style="max-width: 150px; margin: 0; padding: 4px 0; text-align: right; color: #2A333D">
+                                                        00-170-05980-04
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                            <!-- END - CARD RESUMEN BLUE CONTENT -->
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <table align="center" border="0" cellpadding="0" cellspacing="0" bgcolor="#FFFFF"
+                style="padding: 0; margin: 0 0 16px 0; width:100%; border-radius:16px;  border-color: #DDE5FF; border-right-color: #DDE5FF; border-bottom-color: #DDE5FF; border-left-color: #DDE5FF; border-top-style: solid; border-right-style: solid; border-bottom-style: solid; border-left-style: solid; border-top-width: 1px; border-right-width: 1px; border-bottom-width: 1px; border-left-width: 1px; overflow: hidden;">
+                <tbody>
+                    <tr>
+                        <td style="border-collapse:collapse; padding: 1px; border:none">
+                            <table align="center" border="0" cellpadding="0" cellspacing="0" bgcolor="#ffffff"
+                                style="width:100%; border-radius: 0; border-collapse:collapse;">
+                                <tbody>
+                                    <tr>
+                                        <td style="border-collapse:collapse; padding: 16px; border:none">
+                                            <!-- START - CARD RESUMEN BLUE CONTENT -->
+                                            <table cellpadding="0" cellspacing="0" border="0" width="100%"
+                                                style="font-size: 14px; width: 100%; padding: 0; margin: 0; line-height: 24px; mso-line-height-rule:exactly;"
+                                                bgcolor="#ffffff">
+
+                                                <!-- modelo-->
+                                                <tr>
+                                                    <td
+                                                        style="font-size: 14px; margin: 0; padding: 4px 0; color: #2A333D; font-weight: bold;">
+                                                        Destino
+                                                    </td>
+
+                                                </tr>
+
+                                                <!-- fecha -->
+                                                <tr>
+                                                    <td
+                                                        style="vertical-align:top; white-space: normal; margin: 0; padding: 4px 0; color: #52677B; font-weight: regular;">
+                                                        Nombre y Apellido
+                                                    </td>
+                                                    <td
+                                                        style="max-width: 150px; margin: 0; padding: 4px 0; text-align: right; color: #2A333D">
+                                                        Nazareno Carvajal
+                                                    </td>
+                                                </tr>
+
+                                                <tr>
+                                                    <td
+                                                        style="vertical-align:top; margin: 0; padding: 4px 0; color: #52677B; font-weight: regular;">
+                                                        Rut
+                                                    </td>
+                                                    <td
+                                                        style="max-width: 150px; margin: 0; padding: 4px 0; text-align: right; color: #2A333D">
+                                                        16480166-7
+                                                    </td>
+                                                </tr>
+
+                                                <tr>
+                                                    <td
+                                                        style="vertical-align:top; margin: 0; padding: 4px 0; color: #52677B; font-weight: regular;">
+                                                        Tipo de Cuenta
+                                                    </td>
+                                                    <td
+                                                        style="max-width: 150px; margin: 0; padding: 4px 0; text-align: right; color: #2A333D">
+                                                        Cuenta Corriente
+                                                    </td>
+                                                </tr>
+
+                                                <!-- hora-->
+                                                <tr>
+                                                    <td
+                                                        style="vertical-align:top; margin: 0; padding: 4px 0; color: #52677B; font-weight: regular;">
+                                                        N&ordm; de Cuenta
+                                                    </td>
+                                                    <td
+                                                        style="max-width: 150px; margin: 0; padding: 4px 0; text-align: right; color: #2A333D">
+                                                        00-120-16650-10
+                                                    </td>
+                                                </tr>
+
+                                                <tr>
+                                                    <td
+                                                        style="vertical-align:top; margin: 0; padding: 4px 0; color: #52677B; font-weight: regular;">
+                                                        Banco
+                                                    </td>
+                                                    <td
+                                                        style="max-width: 150px; margin: 0; padding: 4px 0; text-align: right; color: #2A333D">
+                                                        Banco Chile/Edwards
+                                                    </td>
+                                                </tr>
+
+                                                <tr>
+                                                    <td
+                                                        style="vertical-align:top; margin: 0; padding: 4px 0; color: #52677B; font-weight: regular;">
+                                                        Email
+                                                    </td>
+                                                    <td
+                                                        style="max-width: 180px; margin: 0; padding: 4px 0; text-align: right; color: #2A333D">
+
+                                                        nazareno.carvajal@gmail.com
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                            <!-- END - CARD RESUMEN BLUE CONTENT -->
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <table align="center" border="0" cellpadding="0" cellspacing="0" bgcolor="#FFFFF"
+                style="padding: 0; margin: 0 0 16px 0; width:100%; border-radius:16px;  border-color: #DDE5FF; border-right-color: #DDE5FF; border-bottom-color: #DDE5FF; border-left-color: #DDE5FF; border-top-style: solid; border-right-style: solid; border-bottom-style: solid; border-left-style: solid; border-top-width: 1px; border-right-width: 1px; border-bottom-width: 1px; border-left-width: 1px; overflow: hidden;">
+                <tbody>
+                    <tr>
+                        <td style="border-collapse:collapse; padding: 1px; border:none">
+                            <table align="center" border="0" cellpadding="0" cellspacing="0" bgcolor="#ffffff"
+                                style="width:100%; border-radius: 0; border-collapse:collapse;">
+                                <tbody>
+                                    <tr>
+                                        <td style="border-collapse:collapse; padding: 14px; border:none">
+                                            <!-- START - CARD RESUMEN BLUE CONTENT -->
+                                            <table cellpadding="0" cellspacing="0" border="0" width="100%"
+                                                style="font-size: 14px; width: 100%; padding: 0; margin: 0; line-height: 24px; mso-line-height-rule:exactly;"
+                                                bgcolor="#ffffff">
+                                                <!-- modelo-->
+                                                <tr>
+                                                    <td
+                                                        style="vertical-align:top; font-size: 14px; margin: 0; padding: 4px 0; color: #2A333D; font-weight: bold;">
+                                                        Monto
+                                                    </td>
+
+                                                    <td
+                                                        style="max-width: 150px; text-align: right; letter-spacing: 1px; font-size: 20px; margin: 0; padding: 4px 0; color: #2A333D; font-weight: bold;">
+                                                        $1.150.000
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                            <!-- END - CARD RESUMEN BLUE CONTENT -->
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <table align="center" border="0" cellpadding="0" cellspacing="0" bgcolor="#FFFFF"
+                style="padding: 0; margin: 0 0 16px 0; width:100%; border-radius:16px;  border-color: #DDE5FF; border-right-color: #DDE5FF; border-bottom-color: #DDE5FF; border-left-color: #DDE5FF; border-top-style: solid; border-right-style: solid; border-bottom-style: solid; border-left-style: solid; border-top-width: 1px; border-right-width: 1px; border-bottom-width: 1px; border-left-width: 1px; overflow: hidden;">
+                <tbody>
+                    <tr>
+                        <td style="border-collapse:collapse; padding: 1px; border:none">
+                            <table align="center" border="0" cellpadding="0" cellspacing="0" bgcolor="#ffffff"
+                                style="width:100%; border-radius: 0; border-collapse:collapse;">
+                                <tbody>
+                                    <tr>
+                                        <td style="border-collapse:collapse; padding: 14px; border:none">
+                                            <!-- START - CARD RESUMEN BLUE CONTENT -->
+                                            <table cellpadding="0" cellspacing="0" border="0" width="100%"
+                                                style="font-size: 14px; width: 100%; padding: 0; margin: 0; line-height: 24px; mso-line-height-rule:exactly;"
+                                                bgcolor="#ffffff">
+
+                                                <!-- modelo-->
+                                                <tr>
+                                                    <td
+                                                        style="vertical-align:top; font-size: 14px; margin: 0; padding: 4px 0; color: #2A333D; font-weight: bold;">
+                                                        Mensaje
+                                                    </td>
+
+                                                    <td
+                                                        style="max-width: 150px; text-align: right;  font-size: 14px; margin: 0; padding: 4px 0; color: #2A333D; font-weight: regular;">
+                                                        
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                            <!-- END - CARD RESUMEN BLUE CONTENT -->
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- EMPIEZAN ALERTAS DE TRANSFERENCIAS CON CUENTAS DE AHORRO -->
+            <!-- FINALIZAN ALERTAS DE TRANSFERENCIAS CON CUENTAS DE AHORRO -->
+            <!-- EMPIEZAN ALERTAS DE TRANSFERENCIAS CON CUENTAS DE AHORRO COMBINATORIA INTERESES Y REAJUSTES -->
+            <!-- FINALIZAN ALERTAS DE TRANSFERENCIAS CON CUENTAS DE AHORRO COMBINATORIA INTERESES Y REAJUSTES -->
+
+            <!-- END - CARD RESUMEN BLUE BACKGROUND Y BORDER -->
+            <table cellpadding="0" cellspacing="0" border="0" width="100%"
+                style="font-size: 12px; width: 100%; margin-top: 45px; padding: 0; border: none;border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt;">
+                <tr>
+                    <td style="margin: 0; padding: 0; color: #52677B">
+                        <p
+                            style="margin: 0 0 4px 0; padding: 0; color: #2A333D; font-weight: bold; font-size: 14px; line-height: 24px; mso-line-height-rule:exactly;">
+                            Fecha y Hora:</p>
+                        <p
+                            style="margin: 0 0 20px 0; padding: 0; color: #52677B; line-height: 16px; mso-line-height-rule:exactly; font-size: 12px;">
+                            mi&eacute;rcoles 03 de diciembre de 2025 11:53</p>
+
+                        <p
+                            style="margin: 0 0 4px 0; padding: 0; color: #2A333D; font-weight: bold; font-size: 14px; line-height: 24px; mso-line-height-rule:exactly;">
+                            Transacci&oacute;n</p>
+                        <p
+                            style="margin: 0; padding: 0; color: #52677B; line-height: 16px; mso-line-height-rule:exactly; font-size: 12px;">
+                            TEFMBCO2512031153122369828340</p>
+                    </td>
+
+                    <!-- Logo -->
+                    <td style="text-align: right; margin: 0; padding: 0; vertical-align:top;" align="right">
+                        <img src="https://servicios.bancochile.cl/imagenes/movil/correo/mails-assets/v2/mi-banco/bch_stamp.png" height="80" width="80"
+                            style="max-width: 100% !important; margin: 0; padding: 0; -ms-interpolation-mode:bicubic;" />
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>                <!--  Footer Call Center  -->
+<table role="presentation" cellpadding="0" cellspacing="0" border="0"
+    style="width: 100%; margin: 0; padding: 0; border: none;border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt;">
+    <tr>
+        <td bgcolor="#FFFFFF"
+            style="display: block !important; max-width: 600px !important; margin: 0 auto 0 auto; padding: 30px 10px 20px 10px; mso-line-height-rule:exactly;">
+            <div>
+                <table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0"
+                    style="font-weight: bold; font-size: 15px!important; line-height: 1.6; width: 100%; margin: 0; padding: 0; border: none;border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt;">
+                        <tr>
+                                    <td
+                                        style="text-align: center; margin: 0; padding: 30px 0 4px 0; color: #52677B; font-weight: bold; border-top:1px solid #CED7E0;">
+                                        Si tienes dudas o consultas, puedes llamar a nuestra Banca Telef&oacute;nica
+                                        <br>
+                                        o tambi&eacute;n, dirigirte a cualquiera de nuestras sucursales.
+                                    </td>
+                        </tr>
+                </table>
+            </div>
+        </td>
+    </tr>
+</table>                <!--  Foooter Social Media  -->
+<table role="presentation" cellpadding="0" cellspacing="0" border="0"
+    style="width: 100%; margin: 0; padding: 0; border: none;border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt;">
+    <tr>
+        <td bgcolor="#FFFFFF"
+            style="display: block !important; max-width: 520px !important; margin: 0 auto 0 auto;padding: 0px 40px; mso-line-height-rule:exactly;">
+            <div>
+                <table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0"
+                    style="width: 100%; margin: 0; padding: 0; border: none;border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt;">
+                    <tbody>
+                        <tr>
+                            <td style=" padding: 27px 0 40px 0; border-top:1px solid #CED7E0;">
+                                <table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0"
+                                    style="width: 100%; margin: 0; padding: 0; border: none;border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt; ">
+                                    <tbody>
+                                        <tr>
+                                            <td>
+                                                <table role="presentation" align="center" cellpadding="0"
+                                                    cellspacing="0" border="0"
+                                                    style="max-width: 355px; width: 100%; margin: auto; padding: 0; border: none;border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt;">
+                                                    <tbody>
+                                                        <tr>
+                                                            <td
+                                                                style="text-align: center; font-size: 14px; color: #52677B;">
+                                                                <img alt="Icono facebook" name="face_ins.png"
+                                                                    src="https://servicios.bancochile.cl/imagenes/movil/correo/mails-assets/v2/icon_social_facebook.png"
+                                                                    title="Icono Facebook"
+                                                                    style="max-width: 40px; margin: 0; padding: 0; -ms-interpolation-mode:bicubic;" />
+
+                                                                <p style="font-size:11px; margin: 0; padding: 0;">
+                                                                    <span style="color: #465868">bancochile.</span>cl</p>
+                                                            </td>
+                                                            <td
+                                                                style="text-align: center; font-size: 14px; color: #52677B;">
+                                                                <img alt="Twitter" name="twe_ins.png"
+                                                                    src="https://servicios.bancochile.cl/imagenes/movil/correo/mails-assets/v2/icon_social_twitter.png"
+                                                                    title="Icono Twitter"
+                                                                    style="max-width: 40px; margin: 0; padding: 0; -ms-interpolation-mode:bicubic;" />
+
+                                                                <p style="font-size:11px; margin: 0; padding: 0;">
+                                                                    @AyudaBancoChile</p>
+                                                            </td>
+                                                            <td
+                                                                style="text-align: center; font-size: 14px; color: #52677B;">
+                                                                <img alt="Icono Instagram" name="insta_ins.png"
+                                                                    src="https://servicios.bancochile.cl/imagenes/movil/correo/mails-assets/v2/icon_social_instagram.png"
+                                                                    title="Icono Instagram"
+                                                                    style="max-width: 40px; margin: 0; padding: 0; -ms-interpolation-mode:bicubic;" />
+
+                                                                <p style="font-size:11px; margin: 0; padding: 0;">
+                                                                    @bancodechile</p>
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                                <table role="presentation" cellpadding="0" cellspacing="0" border="0"
+                                                    style="margin: 20px auto 0 auto !important; width: 100%;  padding: 0; border: none;border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt; text-align: center; max-width: 180px;">
+                                                    <tbody>
+                                                        <tr>
+                                                            <table role="presentation" align="left" cellpadding="0"
+                                                                cellspacing="0" border="0"
+                                                                style="width: 100%; margin: 0; padding: 0; border: none;border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt; text-align: center;">
+                                                                <tbody>
+                                                                    <tr>
+                                                                        <td style="letter-spacing: 1px; text-align: center; font-size: 20px; color: #52677B; font-weight: bold;"
+                                                                            valign="middle" width="100%">
+                                                                            <b
+                                                                                style="color: #52677B; line-height: 24px; mso-line-height-rule:exactly; font-family: 'Nunito Sans', Arial Bold, Arial;">
+                                                                                <a class="disable-link" name="number"
+                                                                                    style="color: #52677B; pointer-events: none !important; cursor: text !important; text-decoration: none !important;">
+                                                                                    600 637 37 37
+                                                                                </a>
+                                                                            </b>
+                                                                        </td>
+                                                                    </tr>
+                                                                    <tr>
+                                                                        <td style="text-align: center; font-size: 13px; color: #52677B; line-height: 24px; mso-line-height-rule:exactly"
+                                                                            valign="middle" width="100%">
+                                                                            <span style="font-size:12px;">Banca Telef&oacute;nica</span>
+                                                                        </td>
+                                                                    </tr>
+                                                                </tbody>
+                                                            </table>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </td>
+    </tr>
+</table>                <!--  Footer Alerts  -->
+<table role="presentation" cellpadding="0" cellspacing="0" border="0"
+    style="width: 100%; margin: 0; padding: 0; border: none;border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt;">
+    <tr>
+        <td bgcolor="#0A1861"
+            style="display: block !important; max-width: 520px !important; margin: 0 auto 0 auto; padding: 24px 40px;mso-line-height-rule:exactly;">
+            <table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0"
+                style="padding: 0; border: none;border-collapse:collapse; margin: auto!important;">
+                <tbody>
+                    <tr>
+                        <td>
+                            <img alt="Alerta" name="aleta_ins.png" height="36" width="36"
+                                src="https://servicios.bancochile.cl/imagenes/movil/correo/mails-assets/v2/icon_alert.png" title="Alerta"
+                                style="margin: 0 4px 0 0; padding: 0; -ms-interpolation-mode:bicubic;" />
+                        </td>
+                        <td style="font-size: 12px;color: #ffffff;text-align: center"> ES CLAVE NO DAR
+                            TUS CLAVES
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <table align="center" cellpadding="0" cellspacing="0" border="0"
+                style="padding: 0; border: none;border-collapse:collapse; min-width: 256px;">
+                <tbody>
+                    <tr>
+                        <td style="font-size: 12px;color: #ffffff;text-align: center; 
+                                        line-height: 24px; font-weight: regular; mso-line-height-rule:exactly;">
+                            Por seguridad, este cuerpo no contiene enlaces al s&iacute;tio Web de Banco
+                            de Chile
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </td>
+    </tr>
+</table>                <!--  Footer Importants MiBanco -->
+<table role="presentation" align="center" border="0" cellpadding="0" cellspacing="0" bgcolor="#ffffff"
+    style="padding: 0; margin: 0 0 16px 0; width:100%; ">
+    <tbody>
+        <tr>
+            <td style="border-collapse:collapse; padding: 1px; border:none">
+                <table role="presentation" align="center" border="0" cellpadding="0" cellspacing="0" bgcolor="#ffffff"
+                    style="width:100%; border-radius: 0; border-collapse:collapse;">
+                    <tbody>
+                        <tr>
+                            <td style="border-collapse:collapse; padding: 8px 14px 14px; border:none">
+                                <!-- START - CARD RESUMEN BLUE CONTENT -->
+                                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"
+                                    style="font-size: 14px; width: 100%; padding: 0; margin: 0; line-height: 24px; mso-line-height-rule:exactly;"
+                                    bgcolor="#ffffff">
+                                    <tbody>
+                                        <tr>
+                                            <td>
+                                                <table role="presentation" cellpadding="0" cellspacing="0" border="0"
+                                                    style="max-width: 520px; width: 100%; margin: 13px auto 0;  padding: 4px 0 0 0; border: none;border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt;">
+                                                    <tr>
+                                                        <td
+                                                            style="font-size: 14px; margin: 0; padding: 0; color: #2A333D; font-weight: bold;mso-line-height-rule:exactly;">
+                                                            Importante </td>
+                                                    </tr>
+                                                </table>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="vertical-align:top;">
+                                                <table role="presentation" cellpadding="0" cellspacing="0" border="0"
+                                                    style="max-width: 520px; width: 100%; margin: 13px auto 0;  padding: 4px 0 0 0; border: none;border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt;">
+                                                    <tr>
+                                                        <td align="left" valign="top"
+                                                            style="font-size: 12px; margin: 0; padding: 0; color: #2A333D; font-weight: regular; line-height: 14px;">
+                                                            &nbsp;&bull;&nbsp; Es clave no dar tu
+                                                            claves.
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td align="left" valign="top"
+                                                            style="font-size: 12px; margin: 0; padding: 0; color: #2A333D; font-weight: regular; line-height: 14px;">
+                                                            &nbsp;&bull;&nbsp; Nunca entregar claves,
+                                                            informaci&oacute;n
+                                                            financiera o datos personales a nadie.
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td align="left" valign="top"
+                                                            style="font-size: 12px; margin: 0; padding: 0; color: #2A333D; font-weight: regular; line-height: 14px;">
+                                                            &nbsp;&bull;&nbsp; Ingresar a la
+                                                            p&aacute;gina del
+                                                            Banco digitando la
+                                                            direcci&oacute;n en la barra del navegador.
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td align="left" valign="top"
+                                                            style="font-size: 12px; margin: 0; padding: 0; color: #2A333D; font-weight: regular; line-height: 14px;">
+                                                            &nbsp;&bull;&nbsp; Nunca descargar archivos
+                                                            adjuntos de
+                                                            remitentes desconocidos.
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td align="left" valign="top"
+                                                            style="font-size: 12px; margin: 0; padding: 0; color: #2A333D; font-weight: regular; line-height: 14px;">
+                                                            &nbsp;&bull;&nbsp; Solo seguir nuestras
+                                                            cuentas oficiales
+                                                            certificadas en redes sociales (fijarse en
+                                                            el check junto al nombre de la cuenta).
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td align="left" valign="top"
+                                                            style="font-size: 12px; margin: 0; padding: 0; color: #2A333D; font-weight: regular; line-height: 14px;">
+                                                            &nbsp;&bull;&nbsp; Mantener actualizado el
+                                                            antivirus.
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td align="left" valign="top"
+                                                            style="font-size: 12px; margin: 0; padding: 0; color: #2A333D; font-weight: regular; line-height: 14px;">
+                                                            &nbsp;&bull;&nbsp; En caso de detectar
+                                                            actividad sospechosa,
+                                                            contactarnos a trav&eacute;s de nuestros
+                                                            canales
+                                                            oficiales de ayuda.
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td align="left" valign="top"
+                                                            style="font-size: 12px; margin: 0; padding: 0; color: #2A333D; font-weight: regular; line-height: 14px;">
+                                                            &nbsp;&bull;&nbsp; Informaci&oacute;n de
+                                                            c&oacute;mo
+                                                            evitar ser v&iacute;ctima de un
+                                                            fraude en nuestra p&aacute;gina web.
+                                                        </td>
+                                                    </tr>
+                                                </table>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="vertical-align:top;">
+                                                <table role="presentation" cellpadding="0" cellspacing="0" border="0"
+                                                    style="max-width: 520px; width: 100%; margin: 20px auto 0;  padding: 0; border: none;border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt;">
+                                                    <tr>
+                                                        <td
+                                                            style="margin: 0; padding: 0; font-size: 12px; line-height: 16px; mso-line-height-rule:exactly; color: #52677B">
+                                                            Banco de Chile. Casa Matriz: Ahumada 251, Santiago de
+                                                            Chile.<br />
+                                                            Inf&oacute;rmese sobre la garant&iacute;a estatal de los
+                                                            dep&oacute;sitos en su banco o en <a class="disable-link"
+                                                                name="cmfchile"
+                                                                style="color: #52677B; pointer-events: none !important; cursor: text !important; text-decoration: none !important;">www.cmfchile.cl</a>.
+                                                            &#169; 2025.<br />
+                                                            Todos los derechos reservados. </td>
+                                                    </tr>
+                                                </table>
+                                                <table role="presentation" align="center" cellpadding="0"
+                                                    cellspacing="0" border="0"
+                                                    style="min-width: 285px; max-width: 376px; width: 100%; margin: 15px auto 28px; padding: 0 5px; border: none;border-collapse:collapse;">
+                                                    <tbody>
+                                                        <tr>
+                                                            <td>
+                                                                <img alt="Icono Hoja" name="Ico-Hoja.png" height="36"
+                                                                    width="36" src="https://servicios.bancochile.cl/imagenes/movil/correo/mails-assets/v2/icon_hoja.png"
+                                                                    title="Hoja"
+                                                                    style="margin: 0 5px 0 0; padding: 0; -ms-interpolation-mode:bicubic;" />
+                                                            </td>
+                                                            <td
+                                                                style="font-size: 12px; margin: 0; padding: 0; color: #52677B; font-weight: regular; line-height: 14px; text-align: left; mso-line-height-rule:exactly;">
+                                                                Comprometidos por un medio ambiente
+                                                                mejor, prefiera los medios digitales al
+                                                                papel impreso.
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                <!-- END - CARD RESUMEN BLUE CONTENT -->
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </td>
+        </tr>
+    </tbody>
+</table>                <!--  Footer Importants  -->
+            </td>
+        </tr>
+    </table>
+</body>
+
+</html>

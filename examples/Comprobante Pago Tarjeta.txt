@@ -1,0 +1,223 @@
+Delivered-To: tiglesias@gmail.com
+Received: by 2002:ab2:58a:0:b0:2df:d6a6:acfb with SMTP id 10csp2430779lqd;
+        Sun, 30 Nov 2025 19:07:37 -0800 (PST)
+X-Google-Smtp-Source: AGHT+IEaW8IJG6VbVycNjqf1ljkn1xw/xuxRclPme+YZpRCXOlAId325xHgMGsllvXTQhGz9oO+E
+X-Received: by 2002:a05:7022:6986:b0:119:e56b:9585 with SMTP id a92af1059eb24-11c9d612811mr27806069c88.10.1764558457019;
+        Sun, 30 Nov 2025 19:07:37 -0800 (PST)
+ARC-Seal: i=1; a=rsa-sha256; t=1764558457; cv=none;
+        d=google.com; s=arc-20240605;
+        b=Vx5S7Zts0tSoMZrrg5u/ljQRciiKzB/qeh4pu6h9orOWvMmThMjCycrg2Xatb9IeTD
+         mXRMgsZz/qRQbWzRJoUoIwRwxLlvcsYW9hbgtkmkCGC12FidPqSicSf3xwOOW0LUx/SH
+         Wq12/5XyPiItFDsQsUIVs3yekh4HpYMbpsTbIctGSXOC/J1L87Xz5lq3uv4zuJRJK4Cf
+         rdVG065n/lF8BXaj74YW4mqTi5N9CQIROmjLO7umtf8nSl6nd/LZHfPUOYLc4FTSky4N
+         ZeOuvDzF/M+snb7egzRdKDO0kaSgNnv/56VSEbd41MU7fY+PCRhw2RzWNeUOQZuskbfu
+         Fdug==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20240605;
+        h=content-transfer-encoding:mime-version:subject:message-id:to:from
+         :date:dkim-signature;
+        bh=+SMXBZ77JoApY2ZqWud8+lks+sXfRzcHDzrzswyMDVQ=;
+        fh=g/QsUhIzHS3g8+TSMSUvf3WEoBBJccRLyMNjZScNBT0=;
+        b=Q6P1hn/YV7K6MK03pCf3zoX2gtd7awEqGMbpSgh6GPUavigCzUsrJInyNNawnRRufr
+         YslFpB4A8mm2+NvcaLIJz0IbXvTbWdjnfNztuW5I6S5A4uEzC2y08s0vqx5ltXMAlTjL
+         F0psE4HBxOlOEEZcgqbj7XgdWmUOpw+qdq9ji3mWuDXXE8LCTyLNFvDVIgX9CzMt6hPw
+         YrfNMvbTxiUlhjUms1Vyk46EaQAeW+6t9wUghn0119evX+SNXbt6ktZn4fO6vdYljy+6
+         PS73mzdB+f9ucdold+Ywhxsr2OWYVX9Eanbm5fP01E00RV/YwEHF9bw8RLhHIT5PC9RX
+         sgUw==;
+        dara=google.com
+ARC-Authentication-Results: i=1; mx.google.com;
+       dkim=pass header.i=@bancochile.cl header.s=BCH04072019LGVL header.b="Tb/kBPgn";
+       spf=pass (google.com: domain of prvs=64309525e2=serviciodetransferencias@bancochile.cl designates 200.14.130.128 as permitted sender) smtp.mailfrom="prvs=64309525e2=serviciodetransferencias@bancochile.cl";
+       dmarc=pass (p=REJECT sp=REJECT dis=NONE) header.from=bancochile.cl
+Return-Path: <prvs=64309525e2=serviciodetransferencias@bancochile.cl>
+Received: from bchag1pplgvl.bancochile.cl (ag1pplgvl.bancochile.cl. [200.14.130.128])
+        by mx.google.com with ESMTPS id a92af1059eb24-11dcb057bcbsi9890603c88.303.2025.11.30.19.07.36
+        for <tiglesias@gmail.com>
+        (version=TLS1_2 cipher=ECDHE-ECDSA-AES128-GCM-SHA256 bits=128/128);
+        Sun, 30 Nov 2025 19:07:36 -0800 (PST)
+Received-SPF: pass (google.com: domain of prvs=64309525e2=serviciodetransferencias@bancochile.cl designates 200.14.130.128 as permitted sender) client-ip=200.14.130.128;
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@bancochile.cl header.s=BCH04072019LGVL header.b="Tb/kBPgn";
+       spf=pass (google.com: domain of prvs=64309525e2=serviciodetransferencias@bancochile.cl designates 200.14.130.128 as permitted sender) smtp.mailfrom="prvs=64309525e2=serviciodetransferencias@bancochile.cl";
+       dmarc=pass (p=REJECT sp=REJECT dis=NONE) header.from=bancochile.cl
+Received: from pps.filterd (bchag1pplgvl.bancochile.cl [127.0.0.1])
+	by bchag1pplgvl.bancochile.cl (8.18.1.2/8.18.1.2) with ESMTP id 5B11rX0g030242
+	for <tiglesias@gmail.com>; Mon, 1 Dec 2025 00:04:18 -0300
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=bancochile.cl;
+ h=content-transfer-encoding : content-type : date : from : message-id :
+ mime-version : subject : to; s=BCH04072019LGVL;
+ bh=+SMXBZ77JoApY2ZqWud8+lks+sXfRzcHDzrzswyMDVQ=;
+ b=Tb/kBPgnlx++iJ8HKgzRfwiitlI1XkKtYi3I9LOTwCIL8U7lX2sG/OmzpFaUb2SAw+51
+ UnrEBe2rxjidtdMX2qXJUBkZIs7uhHhx0Es0G9/NMNfk2oBen3vlmoCQdfuVCWyw/D/9
+ xv3a4yASQLY2lciPMwqV8pOAtzrwWe12bBjVLz0RTsoGB1VPYCFjBHcKd9gsk0iVoNpS
+ v7R9gHcwCj7bZTYq67SpTYIf4PAwilE0fqJ1Gmn7pJ3OIZ6OGEEsNmwo3J+If5fAq1JV
+ hKaSSgDcS6bITu1DSiDZH1AHPtFLkdvFcbUfQ55e45y3Ye2vO2i0WQZJe4L7P1EmG8ua VA== 
+Received: from el07cn06.bch.bancodechile.cl ([10.20.31.112])
+	by bchag1pplgvl.bancochile.cl (PPS) with ESMTP id 4aqs6emg5k-1482
+	for <tiglesias@gmail.com>; Mon, 01 Dec 2025 00:04:18 -0300
+Date: Mon, 1 Dec 2025 00:07:35 -0300 (CLST)
+From: serviciodetransferencias@bancochile.cl
+To: tiglesias@gmail.com
+Message-ID: <2002158637.750579.1764558455356@el07cn06.bch.bancodechile.cl>
+Subject: Comprobante Pago Tarjeta
+MIME-Version: 1.0
+Content-Type: text/html; charset=iso-8859-1
+Content-Transfer-Encoding: 7bit
+
+<!doctype html>
+<html class="no-js" lang="">
+<head>
+    <title>Mailing</title>
+    <style media="print">
+        .banco th{ background-color:#282F5E !important;-webkit-print-color-adjust:exact;}
+        .table-informacion{-webkit-print-color-adjust:exact; background-color:#F1F1F3 !important;}
+        .table-informacion tbody{background-color:#fff !important;}
+        .table-informacion tbody.mensaje{background-color:transparent !important;}
+    </style>
+</head>
+<body style="margin:0; padding:0;">
+<table border="0" cellspacing="0" width="600" align="center">
+    <thead class="banco">
+    <tr>
+        <th height="80" width="2%" bgcolor="#282F5E">&nbsp;</th>
+        <th height="80" width="96%"bgcolor="#282F5E" align="left"><img src="http://login.bancochile.cl/bancochile-web/persona/login/assets/images/img-mails/logo-header-mail-bch.png" width="168" height="auto"/></th>
+        <th height="80" width="2%" bgcolor="#282F5E">&nbsp;</th>
+    </tr>
+    </thead>
+    <tbody style="font-family:'Arial';">
+    <tr>
+        <td></td>
+        <td>
+            <h1 style="font-size:18px; margin:30px 0 15px; color:#666666; font-weight:300;">Estimado(a) Tomas Iglesias Garcia</h1>
+
+            <p style="font-style:14px; color:#666666; text-align: justify;">Le informamos que el d&iacute;a 01 de diciembre de 2025 se ha realizado un pago a la tarjeta de cr&eacute;dito Mastercard Black   Titular terminaci&oacute;n ****6563, por un monto Nacional de $786.246 con cargo a su Cuenta Corriente 00-170-05980-04. El detalle puede revisarlo a continuaci&oacute;n.</p>
+
+            <hr style="border-color:#E6E6E8; border-width:1px 0 0 0; border-style:solid;margin-bottom:25px;">
+            <table align="center" border="0" cellspacing="0" cellpadding="30" width="100%" bgcolor="#F1F1F3" >
+                <tr>
+                    <td>
+                        <table class="table-informacion" border="0" cellspacing="0" cellpadding="5" width="100%" bgcolor="#F1F1F3">
+
+                            <tbody bgcolor="#d2d2d4">
+                            <tr bgcolor="#d2d2d4">
+                                <th width="20px"></th>
+                                <th colspan="2" height="35px" align="left" style="font-size:14px; color:#333; font-weight:normal;">Datos de Origen</th>
+                                <th width="20px"></th>
+                            </tr>
+                            </tbody>
+
+                            <tbody style="background-color:#ffffff; font-size:14px;">
+                            <tr height="30px" bgcolor="#ffffff">
+                                <td  width="20px"></td>
+                                <td  width="50%" style="color:#333333;">Nombre</td>
+                                <td  width="50%">Tomas Iglesias Garcia</td>
+                                <td  width="20px"></td>
+                            </tr>
+
+                            <tr height="30px" bgcolor="#ffffff">
+                                <td  width="20px"></td>
+                                <td  width="50%" style="color:#333333;">RUT</td>
+                                <td  width="50%">16.366.090-3</td>
+                                <td  width="20px"></td>
+                            </tr>
+
+                            <tr height="30px" bgcolor="#ffffff">
+                                <td  width="20px"></td>
+                                <td  width="50%" style="color:#333333;">Mail</td>
+                                <td  width="50%">tiglesias@gmail.com</td>
+                                <td  width="20px"></td>
+                            </tr>
+                            </tbody>
+
+                            <tbody bgcolor="#d2d2d4">
+                            <tr bgcolor="#d2d2d4">
+                                <th width="20px"></th>
+                                <th colspan="2" height="35px" align="left" style="font-size:14px; color:#333; font-weight:normal;">Datos de Solicitud</th>
+                                <th width="20px"></th>
+                            </tr>
+                            <tr height="30px" bgcolor="#ffffff">
+                                <td  width="20px"></td>
+                                <td  width="50%" style="color:#333333;">Fecha</td>
+                                <td  width="50%">01/12/2025</td>
+                                <td  width="20px"></td>
+                            </tr>
+                            <tr height="30px" bgcolor="#ffffff">
+                                <td  width="20px"></td>
+                                <td  width="50%" style="color:#333333;">Hora</td>
+                                <td  width="50%">00:07</td>
+                                <td  width="20px"></td>
+                            </tr>
+                            <tr height="30px" bgcolor="#ffffff">
+                                <td  width="20px"></td>
+                                <td  width="50%" style="color:#333333;">Monto Pagado</td>
+                                <td  width="50%">$786.246</td>
+                                <td  width="20px"></td>
+                            </tr>
+                            <tr height="30px" bgcolor="#ffffff">
+                                <td  width="20px"></td>
+                                <td  width="50%" style="color:#333333;">ID</td>
+                                <td  width="50%">00</td>
+                                <td  width="20px"></td>
+                            </tr>
+                            <tr height="30px" bgcolor="#ffffff">
+                                <td  width="20px"></td>
+                                <td  width="50%" style="color:#333333;"></td>
+                                <td  width="50%" style="color:#139DC9;">
+                                    <img src="http://login.bancochile.cl/bancochile-web/persona/login/assets/images/img-mails/timbre-mail-bch.png" style="float: right;"/>
+                                </td>
+                                <td  width="20px"></td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </td>
+        <td></td>
+    </tr>
+    <tr>
+        <td width="45px" style="padding:0;"></td>
+        <td style="padding:0px;">
+            <table  width="100%" border="0" style="margin-top: 20px; border:solid; border-color:#ebebeb;border-width:1px; border-style:dashed;">
+                <tbody>
+                <tr>
+                    <td  width="103px"><img src="http://login.bancochile.cl/bancochile-web/persona/login/assets/images/img-mails/comprobante-cuida-clave.jpg" alt=""/></td>
+                    <td width="497px">
+                        <ul style="list-style-type:none; padding-left:0;">
+                            <li style="font-weight:bold; color:#282F5E; font-size:12px;">Por tu seguridad, este mensaje no tiene enlace al sitio web de Banco de Chile, adem&aacute;s:</li>
+                            <li style="color:#282F5E; font-size:12px;">Nunca te pediremos ingresar a un sitio web desde un correo </li>
+                            <li style="color:#282F5E; font-size:12px;">Nunca te pediremos ingresar tu clave Digipass antes del ingreso a tu Banco en L&iacute;nea, ni al inicio de tu sesi&oacute;n</li>
+                            <li style="color:#282F5E; font-size:12px;">Nunca te llamaremos ni pediremos por SMS tus claves, datos personales o tu clave Digipass</li>
+                            <li style="color:#282F5E; font-size:12px;">Nunca hagas click en un link desde un correo porque puede llevarte a un sitio falso</li>
+                            <li style="color:#282F5E; font-size:12px;">Verifica siempre que la URL del Banco en L&iacute;nea comience con https://(en vez de http://)</li>
+                            <li style="color:#282F5E; font-size:12px;">No hagas click en un link de resultado de b&uacute;squeda. Hasta un buscador puede no ser seguro.</li>
+                        </ul>
+                    </td>
+                </tr>
+
+                </tbody>
+            </table>
+
+        </td>
+        <td width="45px" style="padding:0px;"></td>
+    </tr>
+    <tr>
+        <td> </td>
+        <td>
+            <table>
+                <tr height="100px">
+                    <td width="206px" style="border-right:solid; border-right-color:#002464;border-right-width:1px;">
+                        <img src="http://login.bancochile.cl/bancochile-web/persona/login/assets/images/img-mails/logo-footer-mail-bch.png" width="127" height="auto"/>
+                    </td>
+                    <td style="font-size:10px; padding:5px">
+                        Banco de Chile. Casa Matriz: Ahumada 251, Santiago de Chile.<br>
+                        Inf&oacute;rmese sobre la garant&iacute;a estatal de los dep&oacute;sitos en su banco o en www.cmfchile.cl &copy; 2022 Banco de Chile. Todos los Derechos Reservados.
+                    </td>
+                </tr>
+            </table>
+        </td>
+        <td> </td>
+    </tr>
+    </tbody>
+</table>
+</body>
+</html>

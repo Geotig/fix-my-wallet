@@ -1,0 +1,866 @@
+Delivered-To: tiglesias@gmail.com
+Received: by 2002:ab2:4c17:0:b0:2df:d6a6:acfb with SMTP id o23csp189300lqk;
+        Wed, 3 Dec 2025 15:26:09 -0800 (PST)
+X-Google-Smtp-Source: AGHT+IHxjaAfNqCfL+I6miQjUVCSSlzLfSlJWm4I8TeYQ6TvzKmDvKq8e61YnN+lG/a46ZUDHXHS
+X-Received: by 2002:a05:620a:44d2:b0:8a9:eb31:1033 with SMTP id af79cd13be357-8b6152f4f80mr204535885a.30.1764804369210;
+        Wed, 03 Dec 2025 15:26:09 -0800 (PST)
+ARC-Seal: i=1; a=rsa-sha256; t=1764804369; cv=none;
+        d=google.com; s=arc-20240605;
+        b=kk0r11aN86/RDcutZfhjF+CDjXieSVF2wwQ0ZRq4yw38bWXgeviHO8HNugclUkB34O
+         DxzjhhX5RmPv+Xrig0QwWZdBQ0CCYEhy2w1P/N1qVJ8vDyJvK+PE9kSdzrlyMx573Wvg
+         m+cEI2poJE6WANfEv0JChZhL15AOSWMAO60qJG8a2Jg+NH/8Kk6DFxPebNBcuFFB4ktw
+         j+oJdNU6CqbrLgeqUYmnYs72OzQRhOANDeHcdYhzW8m0EbUwGR+IAXT3+yeiysBO4VRC
+         rthsKuR3FaxmUo0DQHLUPPcvUC+0SkaFvW/exlr1g8E9yANMmiijtUk1+C/fJLKJwcJ/
+         6Y5g==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20240605;
+        h=feedback-id:date:from:mime-version:subject:message-id:to
+         :dkim-signature:dkim-signature;
+        bh=Lp44EPKr4WsT+F71fvTwbvizmimM+m/bJf23FL5Lmws=;
+        fh=g/QsUhIzHS3g8+TSMSUvf3WEoBBJccRLyMNjZScNBT0=;
+        b=SVjPWEEC+dWN4cmM9MwYOLoeytMWZqjw40S/kRctjBhaNWrMUONVVWB88hgB6cLiBa
+         keGt7mS6HLd9aDzIZU7SiFyxW82OwDC3vRh0kXYbE9T5NxR23aXqZz+/BGNZiXA9UXZ+
+         sqYUKpKA4nUUVyog1LvgDbVFasIVisEhJjdxLahV+nTIhqqOGlozS9JFqNCOexmt/6bh
+         AV426jLKl5LtV8hP1y5Jo1GMYuUWilCs+GXkm8/mSNBqUAVYhExxqhcOh+nQUqUURHNd
+         CWOXlofSoGxqxcB8oJalskQ2aVeqSE1jX568Ns80ZNNIWk2xWOVoBE46Ydh3SvuUDejh
+         toaw==;
+        dara=google.com
+ARC-Authentication-Results: i=1; mx.google.com;
+       dkim=pass header.i=@bancochile.cl header.s=ws6elnozsjst4m3acbajqogbgxe36qxq header.b=SuvNKRti;
+       dkim=pass header.i=@amazonses.com header.s=6gbrjpgwjskckoa6a5zn6fwqkn67xbtw header.b=rx1mPF76;
+       spf=pass (google.com: domain of 0100019ae689998b-3157bbe4-0328-4ea5-aaf5-0fafd42dd4e0-000000@spf-ses.bancochile.cl designates 54.240.123.180 as permitted sender) smtp.mailfrom=0100019ae689998b-3157bbe4-0328-4ea5-aaf5-0fafd42dd4e0-000000@spf-ses.bancochile.cl;
+       dmarc=pass (p=REJECT sp=REJECT dis=NONE) header.from=bancochile.cl
+Return-Path: <0100019ae689998b-3157bbe4-0328-4ea5-aaf5-0fafd42dd4e0-000000@spf-ses.bancochile.cl>
+Received: from a123-180.smtp-out.amazonses.com (a123-180.smtp-out.amazonses.com. [54.240.123.180])
+        by mx.google.com with ESMTPS id af79cd13be357-8b625299b72si7398385a.126.2025.12.03.15.26.09
+        for <tiglesias@gmail.com>
+        (version=TLS1_3 cipher=TLS_AES_128_GCM_SHA256 bits=128/128);
+        Wed, 03 Dec 2025 15:26:09 -0800 (PST)
+Received-SPF: pass (google.com: domain of 0100019ae689998b-3157bbe4-0328-4ea5-aaf5-0fafd42dd4e0-000000@spf-ses.bancochile.cl designates 54.240.123.180 as permitted sender) client-ip=54.240.123.180;
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@bancochile.cl header.s=ws6elnozsjst4m3acbajqogbgxe36qxq header.b=SuvNKRti;
+       dkim=pass header.i=@amazonses.com header.s=6gbrjpgwjskckoa6a5zn6fwqkn67xbtw header.b=rx1mPF76;
+       spf=pass (google.com: domain of 0100019ae689998b-3157bbe4-0328-4ea5-aaf5-0fafd42dd4e0-000000@spf-ses.bancochile.cl designates 54.240.123.180 as permitted sender) smtp.mailfrom=0100019ae689998b-3157bbe4-0328-4ea5-aaf5-0fafd42dd4e0-000000@spf-ses.bancochile.cl;
+       dmarc=pass (p=REJECT sp=REJECT dis=NONE) header.from=bancochile.cl
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/simple;
+	s=ws6elnozsjst4m3acbajqogbgxe36qxq; d=bancochile.cl; t=1764804368;
+	h=To:Message-ID:Subject:MIME-Version:Content-Type:From:Date;
+	bh=wg7s8ZnKknTs5/7JOlcZ8FssbmF8CamZWJaa57t6Fi0=;
+	b=SuvNKRtiRUrP0e14COBHjRpoEbDodfW2/arK1ESnjO8zFz/GmuXZYnk0gj+Ipmvd
+	88ioYTaALsKhiIbv5W3HxOf7irwssOgcwZzvCMYecvueg9Q2sSLMMHHTKtkhRloa/aL
+	i8hkRYRU2zRIpj1I205G0EL01csCBMK3r+8P4gheRuW8ag5C6dfvX1dD3UERCIcH7Au
+	yn3ebdVnlEVCLzMMZs2t9I1PR394I72hCVz0mFyQJPS55NlYCVY/lfqZRbC+0rSgsdw
+	LKPWBRZAEeYhqGG/s3kpy4DW92gk4EeNqXNXtLC3Q6WQ+bKUKUgkBej+GqSgoGLVffh
+	0icD4JORDA==
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/simple;
+	s=6gbrjpgwjskckoa6a5zn6fwqkn67xbtw; d=amazonses.com; t=1764804368;
+	h=To:Message-ID:Subject:MIME-Version:Content-Type:From:Date:Feedback-ID;
+	bh=wg7s8ZnKknTs5/7JOlcZ8FssbmF8CamZWJaa57t6Fi0=;
+	b=rx1mPF76tkRpLROzJrjwCziS9UkhQtjoa0ocG7vv8i1JP3hoBJjfPALkryWtCWIJ
+	1oKmtcBVadgcHvVGqJ6ANeuLt5Q8e7VSjldO2QojzDZm2BmE39cwfhHApl14hrTJVUD
+	Bzo5aJv0e+79/UCkBY+r8/scr7yOM9nyEk0kTtlo=
+To: tiglesias@gmail.com
+Message-ID: <0100019ae689998b-3157bbe4-0328-4ea5-aaf5-0fafd42dd4e0-000000@email.amazonses.com>
+Subject: =?UTF-8?Q?Compra_con_Tarjeta_de_Cr=C3=A9dito?=
+MIME-Version: 1.0
+Content-Type: multipart/mixed; 
+	boundary="----=_Part_7169863_584328846.1764804368711"
+From: Banco de Chile <enviodigital@bancochile.cl>
+Date: Wed, 3 Dec 2025 23:26:08 +0000
+Feedback-ID: ::1.us-east-1.H+3AQq/0MdnlxlmpZSC9IOELfnFFAoWQuoqnXPJfaa8=:AmazonSES
+X-SES-Outgoing: 2025.12.03-54.240.123.180
+
+------=_Part_7169863_584328846.1764804368711
+Content-Type: multipart/alternative; 
+	boundary="----=_Part_7169862_1110271914.1764804368711"
+
+------=_Part_7169862_1110271914.1764804368711
+Content-Type: text/html; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+<html>
+<head><meta http-equiv=3D"Content-Type" content=3D"text/html; charset=3DUTF=
+-8"><meta name=3D"viewport" content=3D"width=3Ddevice-width; initial-scale=
+=3D1.0; maximum-scale=3D1.0;"><link href=3D"https://fonts.googleapis.com/cs=
+s2?family=3DNunito+Sans:wght@200;400;800;900&display=3Dswap" rel=3D"stylesh=
+eet">
+=09<title>Banco de Chile</title>
+=09<style type=3D"text/css">body * {
+    font-family: 'Nunito Sans', Arial, sans-serif !important
+}
+div, p, a, li, td {
+    -webkit-text-size-adjust: none;
+}
+* {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+td {
+    word-break: break-word;
+}
+a {
+    word-break: break-word;
+    text-decoration: none;
+    color: inherit;
+}
+body .ReadMsgBody {
+    width: 100%;
+    background-color: #ffffff;
+}
+body .ExternalClass {
+    width: 100%;
+    background-color: #ffffff;
+}
+body {
+    width: 100%;
+    height: 100%;
+    background-color: #ffffff;
+    margin: 0;
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
+}
+html {
+    background-color: #ffffff;
+    width: 100%;
+}
+body img {
+    user-drag: none;
+    -moz-user-select: none;
+    -webkit-user-drag: none;
+}
+body .logo img {
+    width: 140px;
+    height: auto;
+}
+body .image110 img {
+    width: 110px;
+    height: auto;
+}
+body .image275 img {
+    width: 275px;
+    height: auto;
+}
+body .image370 img {
+    width: 370px;
+    height: auto;
+}
+body .image650 img {
+    width: 650px;
+    height: auto;
+}
+body .image200 img {
+    width: 200px;
+    height: auto;
+}
+body .image185 img {
+    width: 185px;
+    height: auto;
+}
+body .image170 img {
+    width: 170px;
+    height: auto;
+}
+body .icon38 img {
+    width: 38px;
+    height: auto;
+}
+body .smallIcon8 img {
+    width: 8px;
+    height: auto;
+}
+body #footerIcon16 {
+    width: 16px;
+    height: auto;
+}
+ul {
+    margin: 10px;
+    padding: 0px;
+}
+li {
+    margin: 10px;
+    padding: 0px;
+}
+=09</style>
+=09<style type=3D"text/css">@media only screen and (max-width: 640px) {
+body body {
+    width: auto!important;
+}
+=09=09body .full-div {
+    width: 100%!important;
+    clear: both;
+}
+body table[class=3Dfull] {
+    width: 100%!important;
+    clear: both;
+}
+body table[class=3Dmobile] {
+    width: 100%!important;
+    padding-left: 30px;
+    padding-right: 30px;
+    clear: both;
+}
+body table[class=3Dmobileheader] {
+    width: 100%!important;
+    padding-left: 0px;
+    padding-right: 0px;
+    clear: both;
+}
+body table[class=3DfullCenter] {
+    width: 100%!important;
+    text-align: center!important;
+    clear: both;
+}
+body td[class=3DfullCenter] {
+    width: 100%!important;
+    text-align: center!important;
+    clear: both;
+}
+body .erase {
+    display: none;
+}
+body .buttonScale {
+    float: none!important;
+    text-align: center!important;
+    display: inline-block!important;
+    clear: both;
+}
+body td[class=3Dpad30] {
+    width: 35px!important;
+    clear: both;
+}
+body td[class=3Dw40] {
+    width: 6%!important;
+    clear: both;
+}
+body .image170 img {
+    width: 100%!important;
+}
+body .image275 img {
+    width: 100%!important;
+}
+body .image370 img {
+    width: 100%!important;
+}
+body .image650 img {
+    width: 100%!important;
+}
+body table[class=3Dmcenter] {
+    width: 100%!important;
+    text-align: center;
+    vertical-align: middle;
+    clear: both!important;
+    float: none;
+    margin: 0px!important;
+}
+body td[class=3Dh5] {
+    height: 5px!important;
+    clear: both;
+}
+}
+}
+=09</style>
+=09<style type=3D"text/css">@media only screen and (max-width: 479px) {
+body body {
+    width: auto!important;
+}
+body table[class=3Dfull] {
+    width: 100%!important;
+    clear: both;
+}
+body .full-div {
+    width: 100%!important;
+    clear: both;
+}
+body table[class=3Dmobile] {
+    width: 100%!important;
+    padding-left: 20px;
+    padding-right: 20px;
+    clear: both;
+}
+body table[class=3DfullCenter] {
+    width: 100%!important;
+    text-align: center!important;
+    clear: both;
+}
+body table[class=3Dmobileheader] {
+    width: 100%!important;
+    padding-left: 0px;
+    padding-right: 0px;
+    clear: both;
+}
+body td[class=3DfullCenter] {
+    width: 100%!important;
+    text-align: center!important;
+    clear: both;
+}
+body .erase {
+    display: none;
+}
+body .buttonScale {
+    float: none!important;
+    text-align: center!important;
+    display: inline-block!important;
+    clear: both;
+}
+body .eraseMob {
+    display: none!important;
+}
+body .font32 {
+    font-size: 32px!important;
+    line-height: 46px!important;
+}
+body td[class=3Dpad30] {
+    width: 35px!important;
+    clear: both;
+}
+body td[class=3Dw35] {
+    width: 7%!important;
+    clear: both;
+}
+body .image170 img {
+    width: 100%!important;
+}
+body .image275 img {
+    width: 100%!important;
+}
+body .image370 img {
+    width: 100%!important;
+}
+body .image650 img {
+    width: 100%!important;
+}
+body table[class=3Dmcenter] {
+    text-align: center;
+    vertical-align: middle;
+    clear: both!important;
+    float: none;
+    margin: 0px!important;
+}
+body td[class=3Dh5] {
+    height: 5px!important;
+    clear: both;
+}
+}
+}
+=09</style>
+=09<style type=3D"text/css">.wm-ab-launcher-spinner {
+    height: 100%;
+    left: 0;
+    position: absolute;
+    top: 0;
+    width: 100%;
+}
+.wm-ab-launcher-spinner::before {
+    animation: wm-ab-spin 1.5s linear infinite;
+    border: 2px solid #f3f3f3;
+    border-radius: 50%;
+    border-top: 2px solid transparent;
+    content: '';
+    height: 18px;
+    left: calc(50% - 9px);
+    position: absolute;
+    top: calc(50% - 9px);
+    width: 18px;
+}
+@keyframes wm-ab-spin {
+0% {
+transform: rotate(0deg);
+}
+100% {
+transform: rotate(360deg);
+}
+}
+=09</style>
+=09<style type=3D"text/css">.wm-ab-launcher-spinner {
+    height: 100%;
+    left: 0;
+    position: absolute;
+    top: 0;
+    width: 100%;
+}
+.wm-ab-launcher-spinner::before {
+    animation: wm-ab-spin 1.5s linear infinite;
+    border: 2px solid #f3f3f3;
+    border-radius: 50%;
+    border-top: 2px solid transparent;
+    content: '';
+    height: 18px;
+    left: calc(50% - 9px);
+    position: absolute;
+    top: calc(50% - 9px);
+    width: 18px;
+}
+@keyframes wm-ab-spin {
+0% {
+transform: rotate(0deg);
+}
+100% {
+transform: rotate(360deg);
+}
+}
+=09</style>
+=09<style type=3D"text/css">.wm-ab-launcher-spinner {
+    height: 100%;
+    left: 0;
+    position: absolute;
+    top: 0;
+    width: 100%;
+}
+.wm-ab-launcher-spinner::before {
+    animation: wm-ab-spin 1.5s linear infinite;
+    border: 2px solid #f3f3f3;
+    border-radius: 50%;
+    border-top: 2px solid transparent;
+    content: '';
+    height: 18px;
+    left: calc(50% - 9px);
+    position: absolute;
+    top: calc(50% - 9px);
+    width: 18px;
+}
+@keyframes wm-ab-spin {
+0% {
+transform: rotate(0deg);
+}
+100% {
+transform: rotate(360deg);
+}
+}
+=09</style>
+=09<style class=3D"walkme-to-remove" type=3D"text/css">.wm-ab-launcher-spin=
+ner {
+    height: 100%;
+    left: 0;
+    position: absolute;
+    top: 0;
+    width: 100%;
+}
+.wm-ab-launcher-spinner::before {
+    animation: wm-ab-spin 1.5s linear infinite;
+    border: 2px solid #f3f3f3;
+    border-radius: 50%;
+    border-top: 2px solid transparent;
+    content: '';
+    height: 18px;
+    left: calc(50% - 9px);
+    position: absolute;
+    top: calc(50% - 9px);
+    width: 18px;
+}
+@keyframes wm-ab-spin {
+0% {
+transform: rotate(0deg);
+}
+100% {
+transform: rotate(360deg);
+}
+}
+=09</style>
+</head>
+<body style=3D"margin: 0; padding: 0;">
+<div id=3D"contenedormail" style=3D"width: 100%; background-color: #ffffff"=
+>
+<div align=3D"center" class=3D"full-div" id=3D"contenedor650" style=3D"widt=
+h: 650px; background-color: #ffffff; margin-right: auto; margin-left: auto"=
+>
+<table align=3D"center" bgcolor=3D"#ffffff" border=3D"0" cellpadding=3D"0" =
+cellspacing=3D"0" class=3D"full" width=3D"650">
+=09
+=09=09<tr>
+=09=09=09<td align=3D"center">
+=09=09=09<table align=3D"center" border=3D"0" cellpadding=3D"0" cellspacing=
+=3D"0" class=3D"full" width=3D"100%">
+=09=09=09=09
+=09=09=09=09=09<tr>
+=09=09=09=09=09=09<td align=3D"center">
+=09=09=09=09=09=09<table align=3D"center" border=3D"0" cellpadding=3D"0" ce=
+llspacing=3D"0" class=3D"mobileheader" width=3D"650">
+=09=09=09=09=09=09=09
+=09=09=09=09=09=09=09=09<tr>
+=09=09=09=09=09=09=09=09=09<td align=3D"center" width=3D"100%">
+=09=09=09=09=09=09=09=09=09<table align=3D"center" border=3D"0" cellpadding=
+=3D"0" cellspacing=3D"0" class=3D"full" width=3D"650">
+=09=09=09=09=09=09=09=09=09=09
+=09=09=09=09=09=09=09=09=09=09=09<tr>
+=09=09=09=09=09=09=09=09=09=09=09=09<td align=3D"center" width=3D"100%">
+<table align=3D"center" border=3D"0" cellpadding=3D"0" cellspacing=3D"0" cl=
+ass=3D"full" width=3D"650"> <tbody> <tr> <td align=3D"left" class=3D"fullCe=
+nter" valign=3D"middle" width=3D"100%"><img border=3D"0" height=3D"128" nam=
+e=3D"BCH.png" src=3D"http://contentz.mkt8988.com/lp/14944/107881/BCH_nuevo.=
+png" width=3D"232" /></td> </tr> </tbody> </table>
+</td>
+=09=09=09=09=09=09=09=09=09=09=09</tr>
+=09=09=09=09=09=09=09=09=09=09
+=09=09=09=09=09=09=09=09=09</table>
+=09=09=09=09=09=09=09=09=09</td>
+=09=09=09=09=09=09=09=09</tr>
+=09=09=09=09=09=09=09
+=09=09=09=09=09=09</table>
+=09=09=09=09=09=09</td>
+=09=09=09=09=09</tr>
+=09=09=09=09
+=09=09=09</table>
+=09=09=09</td>
+=09=09</tr>
+=09
+</table>
+
+<table align=3D"center" bgcolor=3D"#FFFFFF" border=3D"0" cellpadding=3D"0" =
+cellspacing=3D"0" class=3D"full" width=3D"650">
+=09
+=09=09<tr>
+=09=09=09<td align=3D"center" valign=3D"top" width=3D"100%">
+=09=09=09<table align=3D"center" border=3D"0" cellpadding=3D"0" cellspacing=
+=3D"0" class=3D"mobile" width=3D"100%">
+=09=09=09=09
+=09=09=09=09=09<tr>
+=09=09=09=09=09=09<td align=3D"center">
+=09=09=09=09=09=09<table align=3D"center" border=3D"0" cellpadding=3D"0" ce=
+llspacing=3D"0" class=3D"full" width=3D"650">
+=09=09=09=09=09=09=09
+=09=09=09=09=09=09=09=09<tr>
+=09=09=09=09=09=09=09=09=09<td align=3D"center" width=3D"100%"><!-- Centere=
+d Title -->
+=09=09=09=09=09=09=09=09=09<table align=3D"center" border=3D"0" cellpadding=
+=3D"0" cellspacing=3D"0" class=3D"fullCenter" style=3D"border-collapse:coll=
+apse; mso-table-lspace:0pt; mso-table-rspace:0pt;" width=3D"570">
+=09=09=09=09=09=09=09=09=09=09
+=09=09=09=09=09=09=09=09=09=09=09<tr>
+=09=09=09=09=09=09=09=09=09=09=09=09<td class=3D"fullCenter" style=3D"font-=
+family: Helvetica, Arial, sans-serif, 'Nunito Sans'; font-size: 16px; color=
+: rgb(51, 51, 52); line-height: 10px; text-transform: none; padding: 0px 0p=
+x;" valign=3D"middle" width=3D"100%"><span>
+</span></td>
+=09=09=09=09=09=09=09=09=09=09=09</tr>
+=09=09=09=09=09=09=09=09=09=09=09<tr>
+=09=09=09=09=09=09=09=09=09=09=09=09<td class=3D"fullCenter" style=3D"font-=
+family: Helvetica, Arial, sans-serif, 'Nunito Sans'; font-size: 16px; color=
+: rgb(51, 51, 52); line-height: 20px; text-transform: none; padding: 20px 0=
+px;" valign=3D"middle" width=3D"100%">Tomas Iglesias Garcia:
+</td>
+=09=09=09=09=09=09=09=09=09=09=09</tr>
+=09=09=09=09=09=09=09=09=09=09=09<tr>
+=09=09=09=09=09=09=09=09=09=09=09=09<td class=3D"fullCenter" style=3D"font-=
+family: Helvetica, Arial, sans-serif, 'Nunito Sans'; font-size: 16px; color=
+: #52677b; line-height: 25px; text-transform: none; padding: 0px 0px 18px; =
+text-align: left;" valign=3D"middle" width=3D"100%">Te informamos que se ha=
+ realizado una compra por $5.900 con Tarjeta de Cr&eacute;dito ****6563 en =
+MERCADOPAGO *FONTANAE  Las Condes    CHL el 03/12/2025 20:25.<br /> Revisa =
+Saldos y Movimientos en App Mi Banco o Banco en L&iacute;nea.
+<br />
+<br />
+<br />
+&nbsp;M&aacute;s informaci&oacute;n 60&zwj;0 63&zwj;7 37&zwj;37.
+<br />
+=09=09=09=09=09=09=09=09=09=09=09=09<br />
+</td>
+=09=09=09=09=09=09=09=09=09=09=09</tr>
+=09=09=09=09=09=09=09=09=09=09
+=09=09=09=09=09=09=09=09=09</table>
+=09=09=09=09=09=09=09=09=09</td>
+=09=09=09=09=09=09=09=09</tr>
+=09=09=09=09=09=09=09
+=09=09=09=09=09=09</table>
+=09=09=09=09=09=09</td>
+=09=09=09=09=09</tr>
+=09=09=09=09
+=09=09=09</table>
+=09=09=09</td>
+=09=09</tr>
+=09
+</table>
+<table align=3D"center" bgcolor=3D"#ffffff" border=3D"0" cellpadding=3D"0" =
+cellspacing=3D"0" class=3D"fullCenter" width=3D"640"> <tbody> <tr> <td alig=
+n=3D"center" valign=3D"top" width=3D"100%"> <table align=3D"center" border=
+=3D"0" cellpadding=3D"0" cellspacing=3D"0" class=3D"mobile" width=3D"100%">=
+ <tbody> <tr> <td align=3D"center"> <table align=3D"center" border=3D"0" ce=
+llpadding=3D"0" cellspacing=3D"0" class=3D"full" width=3D"640"> <tbody> <tr=
+> <td align=3D"center" width=3D"100%"> <table align=3D"center" border=3D"0"=
+ cellpadding=3D"0" cellspacing=3D"0" class=3D"mobile" style=3D"border-colla=
+pse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt;" width=3D"600"> <=
+tbody> <tr> <td align=3D"center" class=3D"fullCenter" style=3D"text-align: =
+center; font-family: Helvetica, Arial, sans-serif, 'DM Sans'; font-size: 20=
+px; color: #0a1861; line-height: 26px; font-weight: 800;padding: 40px 0" va=
+lign=3D"middle"> <p style=3D"padding: 0; margin: 0"><img border=3D"0" heigh=
+t=3D"51" src=3D"http://contentz.mkt8988.com/lp/14944/107981/aleta_BCH.png" =
+width=3D"50" /><br /> Sigue estos consejos para evitar fraudes</p> </td> </=
+tr> <tr> <td align=3D"center" class=3D"fullCenter" style=3D"text-align: cen=
+ter; font-family: Helvetica, Arial, sans-serif, 'DM Sans'; font-size: 24px;=
+ color: #0a1861; line-height: 26px; font-weight: 400;padding: 0" valign=3D"=
+middle"> <table align=3D"center" border=3D"0" cellpadding=3D"0" cellspacing=
+=3D"5" style=3D"font-family: Helvetica, Arial, sans-serif, 'DM Sans';font-s=
+ize:14px;color: #595959;margin-bottom:20px;" width=3D"100%"> <tbody> <tr> <=
+td style=3D"vertical-align:top; margin:0px; padding:2px;vertical-align:top;=
+ word-break:keep-all" width=3D"30"><img border=3D"0" height=3D"18" src=3D"h=
+ttp://contentz.mkt8988.com/lp/14944/107981/ticket_BCH.png" width=3D"25" /><=
+/td> <td style=3D"font-family: Helvetica, Arial, sans-serif, 'DM Sans';font=
+-size:14px;color: #0a1861;font-weight: 400; vertical-align:top; margin:0px;=
+ line-height:120%;margin:0;padding:2px; word-break:keep-all; text-align: le=
+ft"> <p style=3D"padding: 0; margin: 0">Nunca te llamaremos solicitando tus=
+ claves o informaci&oacute;n personal.</p> </td> </tr> <tr> <td style=3D"ve=
+rtical-align:top; margin:0px; padding:2px;vertical-align:top; word-break:ke=
+ep-all" width=3D"30"><img border=3D"0" height=3D"18" src=3D"http://contentz=
+.mkt8988.com/lp/14944/107981/ticket_BCH.png" width=3D"25" /></td> <td style=
+=3D"font-family: Helvetica, Arial, sans-serif, 'DM Sans';font-size:14px;col=
+or: #0a1861;font-weight: 400; vertical-align:top; margin:0px; line-height:1=
+20%;margin:0;padding:2px; word-break:keep-all; text-align: left"> <p style=
+=3D"padding: 0; margin: 0">Nunca hagas click en links ni descargues archivo=
+s adjuntos de correos sospechosos.</p> </td> </tr> <tr> <td style=3D"vertic=
+al-align:top; margin:0px; padding:2px;vertical-align:top; word-break:keep-a=
+ll" width=3D"30"><img border=3D"0" height=3D"18" src=3D"http://contentz.mkt=
+8988.com/lp/14944/107981/ticket_BCH.png" width=3D"25" /></td> <td style=3D"=
+font-family: Helvetica, Arial, sans-serif, 'DM Sans';font-size:14px;color: =
+#0a1861;font-weight: 400; vertical-align:top; margin:0px; line-height:120%;=
+margin:0;padding:2px; word-break:keep-all; text-align: left"> <p style=3D"p=
+adding: 0; margin: 0">Ingresa a la p&aacute;gina del Banco digitando la dir=
+ecci&oacute;n en la barra de tu navegador.</p> </td> </tr> </tbody> </table=
+> </td> </tr> </tbody> </table> </td> </tr> </tbody> </table> </td> </tr> <=
+/tbody> </table> </td> </tr> </tbody> </table> <table align=3D"center" bord=
+er=3D"0" cellpadding=3D"0" cellspacing=3D"0" class=3D"full" style=3D"border=
+-collapse:separate; mso-table-lspace:0pt; mso-table-rspace:0pt; background-=
+color: #f5f5f5;" width=3D"640"> <tbody> <tr> <td align=3D"center" style=3D"=
+padding: 20px 0" width=3D"100%"> <table align=3D"center" border=3D"0" cellp=
+adding=3D"0" cellspacing=3D"0" class=3D"fullCenter" style=3D"border-collaps=
+e:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt;" width=3D"600"> <tb=
+ody> <tr> <td align=3D"left" class=3D"fullCenter" style=3D"text-align: left=
+; font-family: Helvetica, Arial, sans-serif, Montserrat; font-size: 16px; c=
+olor: #212223; line-height: 22px; font-weight: 800;" valign=3D"middle" widt=
+h=3D"100%"> <table border=3D"0" cellpadding=3D"0" cellspacing=3D"0" class=
+=3D"mobile" width=3D"600"> <tbody> <tr> <td align=3D"center" class=3D"fullC=
+enter" style=3D"text-align: center; font-family: Helvetica, Arial, sans-ser=
+if, 'Montserrat'; font-size: 20px; color: #002464; line-height: 26px; font-=
+weight: 800;padding: 20px 0 0 0" valign=3D"middle"> <p style=3D"padding: 0;=
+ margin: 0"><strong><span style=3D"font-size:18px;">Realiza todo de forma &=
+aacute;gil y simple usando nuestras&nbsp;aplicaciones*</span></strong></p> =
+</td> </tr> <tr> <td align=3D"center" class=3D"fullCenter" style=3D"text-al=
+ign: center; font-family: Helvetica, Arial, sans-serif, 'Montserrat'; font-=
+size: 10px; color: #777d71; line-height: 10px; font-weight: 400;padding: 05=
+px" valign=3D"middle">&nbsp;</td> </tr> <tr> <td class=3D"fullCenter" style=
+=3D"text-align: center; font-family: Helvetica, Arial, sans-serif, 'Montser=
+rat'; font-size: 14px; color: #666668; line-height: 22px; font-weight: 600;=
+ text-transform: none;" valign=3D"middle" width=3D"100%"> <table align=3D"c=
+enter" border=3D"0" cellpadding=3D"0" cellspacing=3D"0" class=3D"fullCenter=
+" style=3D"border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace=
+:0pt;border-radius: 10px; border-collapse:separate;" width=3D"100%"> <tbody=
+> <tr> <td class=3D"fullCenter" valign=3D"middle" width=3D"100%"> <table al=
+ign=3D"center" border=3D"0" cellpadding=3D"0" cellspacing=3D"0" style=3D"bo=
+rder-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt; text-al=
+ign: center;" width=3D"80%"> <tbody> <tr> <td style=3D"text-align: center; =
+font-family: Helvetica, Arial, sans-serif, 'Montserrat'; color: #002464; fo=
+nt-size: 14px; font-weight: 400" width=3D"35%"> <p style=3D"padding: 0; mar=
+gin: 0"><img border=3D"0" height=3D"81" name=3D"Mi banco2.png" src=3D"http:=
+//contentz.mkt8988.com/lp/14944/107981/mi_banco.png" width=3D"81" /></p> <p=
+ style=3D"padding: 0; margin: 0"><span style=3D"font-family: PT Sans, Arial=
+, sans-serif;">Mi Banco</span></p> </td> <td style=3D"text-align: center; f=
+ont-family: Helvetica, Arial, sans-serif, 'Montserrat'; color: #002464; fon=
+t-size: 14px; font-weight: 400" width=3D"30%"> <p style=3D"padding: 0; marg=
+in: 0"><img border=3D"0" height=3D"80" name=3D"mi pass.png" src=3D"http://c=
+ontentz.mkt8988.com/lp/14944/107881/MIPASSnuevo.png" width=3D"81" /></p> <p=
+ style=3D"padding: 0; margin: 0"><span style=3D"font-family: PT Sans, Arial=
+, sans-serif;">&zwj;Mi Pass</span></p> </td> <td style=3D"text-align: cente=
+r; font-family: Helvetica, Arial, sans-serif, 'Montserrat'; color: #002464;=
+ font-size: 14px; font-weight: 400" width=3D"35%"> <p style=3D"padding: 0; =
+margin: 0"><img border=3D"0" height=3D"80" name=3D"mi inversion2.png" src=
+=3D"http://contentz.mkt8988.com/lp/14944/107981/mi_inversion.png" width=3D"=
+81" /></p> <p style=3D"padding: 0; margin: 0"><span style=3D"font-family: P=
+T Sans, Arial, sans-serif;">Mi Inversi&oacute;n</span></p> </td> </tr> </tb=
+ody> </table> </td> </tr> </tbody> </table> </td> </tr> </tbody> </table> <=
+/td> </tr> </tbody> </table> </td> </tr> </tbody> </table> <p style=3D"padd=
+ing: 0; margin: 0">&nbsp;</p> <table align=3D"center" bgcolor=3D"#0a1861" b=
+order=3D"0" cellpadding=3D"0" cellspacing=3D"0" class=3D"fullCenter" style=
+=3D"border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt;bo=
+rder-radius: 10px;" width=3D"640"> <tbody> <tr> <td class=3D"fullCenter" va=
+lign=3D"middle"> <table border=3D"0" cellpadding=3D"0" cellspacing=3D"0" st=
+yle=3D"border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt=
+; " width=3D"100%"> <tbody> <tr> <td align=3D"center" style=3D"text-align: =
+center;padding: 10px" valign=3D"middle" width=3D"100%"> <p style=3D"color: =
+#4eebff; font-size: 14px; margin: 0; font-family: Helvetica, Arial, sans-se=
+rif, 'DM Sans'; font-weight: 800">Encu&eacute;ntranos</p> </td> </tr> <tr> =
+<td align=3D"center" width=3D"100%"> <table align=3D"left" border=3D"0" cel=
+lpadding=3D"0" cellspacing=3D"0" class=3D"mobile" style=3D"border-collapse:=
+collapse; mso-table-lspace:0pt; mso-table-rspace:0pt;" width=3D"315"> <tbod=
+y> <tr> <td class=3D"fullCenter" style=3D"text-align:center; font-family: H=
+elvetica, Arial, sans-serif, 'DM Sans'; font-size: 20px; color: #404040; li=
+ne-height: 26px; font-weight: 600; text-transform:none;padding-right: 2px" =
+valign=3D"middle" width=3D"100%"> <table align=3D"center" border=3D"0" cell=
+padding=3D"0" cellspacing=3D"0" class=3D"fullCenter" style=3D"border-collap=
+se:separate; mso-table-lspace:0pt; mso-table-rspace:0pt; " width=3D"100%"> =
+<tbody> <tr> <td align=3D"center" class=3D"fullCenter hauto" style=3D"text-=
+align: center; font-family: Helvetica, Arial, sans-serif, 'DM Sans'; font-s=
+ize:15px; color: #0A1861; line-height: 20px; font-weight: none; padding:0" =
+valign=3D"top" width=3D"50%"> <table align=3D"center" border=3D"0" cellpadd=
+ing=3D"0" cellspacing=3D"0" class=3D"fullCenter" style=3D"border-collapse:s=
+eparate; mso-table-lspace:0pt; mso-table-rspace:0pt; border-radius: 10px; b=
+order: solid 1px #0a1861; background-color: #0a1861;" width=3D"100%"> <tbod=
+y> <tr> <td align=3D"center" class=3D"fullCenter hauto" style=3D"text-align=
+: center; font-family: Helvetica, Arial, sans-serif, 'DM Sans'; font-size:1=
+5px; color: #0A1861; line-height: 20px; font-weight: none; padding: 10px" v=
+align=3D"top" width=3D"100%"> <table align=3D"center" border=3D"0" cellpadd=
+ing=3D"0" cellspacing=3D"0" class=3D"mobile" style=3D"border-collapse:colla=
+pse; mso-table-lspace:0pt; mso-table-rspace:0pt;" width=3D"100%"> <tbody> <=
+tr> <td align=3D"center" style=3D"text-align: center;" valign=3D"middle"><i=
+mg border=3D"0" height=3D"51" name=3D"f5.png" src=3D"http://contentz.mkt898=
+8.com/lp/14944/107981/facebook.png" width=3D"51" /></td> </tr> <tr> <td cla=
+ss=3D"fullCenter" style=3D"text-align:center; font-family: Helvetica, Arial=
+, sans-serif, 'DM Sans'; font-size: 13px; color: #4eebff; font-weight: 400;=
+ text-transform: none;padding: 3px" valign=3D"middle" width=3D"100%"> <p st=
+yle=3D"margin: 0 0 2px 0">bancochile&lrm;.&zwj;cl</p> </td> </tr> </tbody> =
+</table> </td> </tr> </tbody> </table> </td> <td align=3D"center" class=3D"=
+fullCenter hauto" style=3D"text-align: center; font-family: Helvetica, Aria=
+l, sans-serif, 'DM Sans'; font-size:15px; color: #0A1861; line-height: 20px=
+; font-weight: none; padding: 0" valign=3D"top" width=3D"50%"> <table align=
+=3D"center" border=3D"0" cellpadding=3D"0" cellspacing=3D"0" class=3D"fullC=
+enter" style=3D"border-collapse:separate; mso-table-lspace:0pt; mso-table-r=
+space:0pt; border-radius: 10px; border: solid 1px #0a1861; background-color=
+: #0a1861;" width=3D"99%"> <tbody> <tr> <td align=3D"center" class=3D"fullC=
+enter hauto" style=3D"text-align: center; font-family: Helvetica, Arial, sa=
+ns-serif, 'DM Sans'; font-size:15px; color: #0A1861; line-height: 20px; fon=
+t-weight: none; padding: 10px" valign=3D"top" width=3D"100%"> <table align=
+=3D"center" border=3D"0" cellpadding=3D"0" cellspacing=3D"0" class=3D"mobil=
+e" style=3D"border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspac=
+e:0pt;" width=3D"100%"> <tbody> <tr> <td align=3D"center" style=3D"text-ali=
+gn: center;" valign=3D"middle"><img border=3D"0" height=3D"51" name=3D"f6.p=
+ng" src=3D"http://contentz.mkt8988.com/lp/14944/107881/twe-X-BCH.png" width=
+=3D"51" /></td> </tr> <tr> <td class=3D"fullCenter" style=3D"text-align:cen=
+ter; font-family: Helvetica, Arial, sans-serif, 'DM Sans'; font-size: 13px;=
+ color: #4eebff; font-weight: 400; text-transform: none;padding: 5px" valig=
+n=3D"middle" width=3D"100%"> <p style=3D"margin: 0 0 2px 0">@&zwj;AyudaBanc=
+oChile</p> </td> </tr> </tbody> </table> </td> </tr> </tbody> </table> </td=
+> </tr> </tbody> </table> </td> </tr> <tr> <td class=3D"fullCenter" style=
+=3D"text-align: left; font-family: Helvetica, Arial, sans-serif, 'DM Sans';=
+ font-size: 14px; color: #404040; line-height: 24px; font-weight: bold;" va=
+lign=3D"middle" width=3D"100%"> <table align=3D"left" border=3D"0" cellpadd=
+ing=3D"0" cellspacing=3D"0" class=3D"full" style=3D"border-collapse:collaps=
+e; mso-table-lspace:0pt; mso-table-rspace:0pt;" width=3D"170"> <tbody> <tr>=
+ <td align=3D"center" class=3D"fullCenter" width=3D"100%"> <table align=3D"=
+left" border=3D"0" cellpadding=3D"0" cellspacing=3D"0" class=3D"fullCenter"=
+ style=3D"border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:=
+0pt; text-align: left;" width=3D"16"> <tbody> <tr> <td class=3D"fullCenter"=
+ style=3D"vertical-align: top;" width=3D"16">&nbsp;</td> </tr> </tbody> </t=
+able> <table align=3D"left" border=3D"0" cellpadding=3D"0" cellspacing=3D"0=
+" class=3D"fullCenter" style=3D"border-collapse:collapse; mso-table-lspace:=
+0pt; mso-table-rspace:0pt;" width=3D"135"> <tbody> <tr> <td class=3D"fullCe=
+nter" height=3D"5" style=3D"text-align: left; font-family: Helvetica, Arial=
+, sans-serif, 'DM Sans'; font-size: 14px; color: #404040;" width=3D"640">&n=
+bsp;</td> </tr> </tbody> </table> </td> </tr> </tbody> </table> </td> </tr>=
+ </tbody> </table> <table align=3D"right" border=3D"0" cellpadding=3D"0" ce=
+llspacing=3D"0" class=3D"mobile" style=3D"border-collapse:collapse; mso-tab=
+le-lspace:0pt; mso-table-rspace:0pt;" width=3D"315"> <tbody> <tr> <td class=
+=3D"fullCenter" style=3D"text-align: left; font-family: Helvetica, Arial, s=
+ans-serif, 'DM Sans'; font-size: 20px; color: #404040; line-height: 26px; f=
+ont-weight: 600; text-transform:none;padding-right: 2px" valign=3D"middle" =
+width=3D"100%"> <table align=3D"center" border=3D"0" cellpadding=3D"0" cell=
+spacing=3D"0" class=3D"fullCenter" style=3D"border-collapse:separate; mso-t=
+able-lspace:0pt; mso-table-rspace:0pt; " width=3D"100%"> <tbody> <tr> <td a=
+lign=3D"center" class=3D"fullCenter hauto" style=3D"text-align: center; fon=
+t-family: Helvetica, Arial, sans-serif, 'DM Sans'; font-size:15px; color: #=
+0A1861; line-height: 20px; font-weight: none; padding:0" valign=3D"top" wid=
+th=3D"50%"> <table align=3D"center" border=3D"0" cellpadding=3D"0" cellspac=
+ing=3D"0" class=3D"fullCenter" style=3D"border-collapse:separate; mso-table=
+-lspace:0pt; mso-table-rspace:0pt; border-radius: 10px; border: solid 1px #=
+0a1861; background-color: #0a1861;" width=3D"100%"> <tbody> <tr> <td align=
+=3D"center" class=3D"fullCenter hauto" style=3D"text-align: center; font-fa=
+mily: Helvetica, Arial, sans-serif, 'DM Sans'; font-size:15px; color: #0A18=
+61; line-height: 20px; font-weight: none; padding: 10px" valign=3D"top" wid=
+th=3D"100%"> <table align=3D"center" border=3D"0" cellpadding=3D"0" cellspa=
+cing=3D"0" class=3D"mobile" style=3D"border-collapse:collapse; mso-table-ls=
+pace:0pt; mso-table-rspace:0pt;" width=3D"100%"> <tbody> <tr> <td align=3D"=
+center" style=3D"text-align: center;" valign=3D"middle"><img border=3D"0" h=
+eight=3D"51" name=3D"f7.png" src=3D"http://contentz.mkt8988.com/lp/14944/10=
+7981/instagram.png" width=3D"51" /></td> </tr> <tr> <td class=3D"fullCenter=
+" style=3D"text-align:center; font-family: Helvetica, Arial, sans-serif, 'D=
+M Sans'; font-size: 13px; color: #4eebff; font-weight: 400; text-transform:=
+ none;padding: 5px" valign=3D"middle" width=3D"100%"> <p style=3D"margin: 0=
+ 0 2px 0">@&zwj;Bancodechile</p> </td> </tr> </tbody> </table> </td> </tr> =
+</tbody> </table> </td> <td align=3D"center" class=3D"fullCenter hauto" sty=
+le=3D"text-align: center; font-family: Helvetica, Arial, sans-serif, 'DM Sa=
+ns'; font-size:15px; color: #0A1861; line-height: 20px; font-weight: none; =
+padding: 0" valign=3D"top" width=3D"50%"> <table align=3D"center" border=3D=
+"0" cellpadding=3D"0" cellspacing=3D"0" class=3D"fullCenter" style=3D"borde=
+r-collapse:separate; mso-table-lspace:0pt; mso-table-rspace:0pt; border-rad=
+ius: 10px; border: solid 1px #0a1861; background-color: #0a1861;" width=3D"=
+100%"> <tbody> <tr> <td align=3D"center" class=3D"fullCenter hauto" style=
+=3D"text-align: center; font-family: Helvetica, Arial, sans-serif, 'DM Sans=
+'; font-size:15px; color: #0A1861; line-height: 20px; font-weight: none; pa=
+dding: 10px" valign=3D"top" width=3D"100%"> <table align=3D"center" border=
+=3D"0" cellpadding=3D"0" cellspacing=3D"0" class=3D"mobile" style=3D"border=
+-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt;" width=3D"1=
+00%"> <tbody> <tr> <td align=3D"center" style=3D"text-align: center;" valig=
+n=3D"middle"><img border=3D"0" height=3D"51" name=3D"f8.png" src=3D"http://=
+contentz.mkt8988.com/lp/14944/107981/telefono_2.png" width=3D"51" /></td> <=
+/tr> <tr> <td class=3D"fullCenter" style=3D"text-align:center; font-family:=
+ Helvetica, Arial, sans-serif, 'DM Sans'; font-size: 13px; color: #4eebff; =
+font-weight: 400; text-transform: none;padding: 5px" valign=3D"middle" widt=
+h=3D"100%"> <p style=3D"margin: 0 0 2px 0">Banca Telef&oacute;nica</p> <p s=
+tyle=3D"margin:0">60&zwj;0 63&zwj;7 37&zwj;37</p> </td> </tr> </tbody> </ta=
+ble> </td> </tr> </tbody> </table> </td> </tr> </tbody> </table> </td> </tr=
+> <tr> <td class=3D"fullCenter" style=3D"text-align: left; font-family: Hel=
+vetica, Arial, sans-serif, 'DM Sans'; font-size: 14px; color: #404040; line=
+-height: 24px; font-weight: bold;" valign=3D"middle" width=3D"100%"> <table=
+ align=3D"left" border=3D"0" cellpadding=3D"0" cellspacing=3D"0" class=3D"f=
+ull" style=3D"border-collapse:collapse; mso-table-lspace:0pt; mso-table-rsp=
+ace:0pt;" width=3D"170"> <tbody> <tr> <td align=3D"center" class=3D"fullCen=
+ter" width=3D"100%"> <table align=3D"left" border=3D"0" cellpadding=3D"0" c=
+ellspacing=3D"0" class=3D"fullCenter" style=3D"border-collapse:collapse; ms=
+o-table-lspace:0pt; mso-table-rspace:0pt; text-align: left;" width=3D"16"> =
+<tbody> <tr> <td class=3D"fullCenter" style=3D"vertical-align: top;" width=
+=3D"16">&nbsp;</td> </tr> </tbody> </table> <table align=3D"left" border=3D=
+"0" cellpadding=3D"0" cellspacing=3D"0" class=3D"fullCenter" style=3D"borde=
+r-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt;" width=3D"=
+135"> <tbody> <tr> <td class=3D"fullCenter" height=3D"5" style=3D"text-alig=
+n: left; font-family: Helvetica, Arial, sans-serif, 'DM Sans'; font-size: 1=
+4px; color: #404040;" width=3D"640">&nbsp;</td> </tr> </tbody> </table> </t=
+d> </tr> </tbody> </table> </td> </tr> </tbody> </table> </td> </tr> </tbod=
+y> </table> </td> </tr> </tbody> </table> <table align=3D"center" bgcolor=
+=3D"#fff" border=3D"0" cellpadding=3D"0" cellspacing=3D"0" class=3D"full" s=
+tyle=3D"background-color: #fff;" width=3D"640"> <tbody> <tr> <td align=3D"c=
+enter" valign=3D"top" width=3D"100%"> <table align=3D"center" border=3D"0" =
+cellpadding=3D"0" cellspacing=3D"0" class=3D"mobile" width=3D"100%"> <tbody=
+> <tr> <td align=3D"center"> <table align=3D"center" bgcolor=3D"#22c064" bo=
+rder=3D"0" cellpadding=3D"0" cellspacing=3D"0" class=3D"full" style=3D"back=
+ground-color: #ffffff;" width=3D"640"> <tbody> <tr> <td align=3D"center" va=
+lign=3D"top" width=3D"100%"> <table align=3D"center" border=3D"0" cellpaddi=
+ng=3D"0" cellspacing=3D"0" class=3D"full" width=3D"100%"> <tbody> <tr> <td =
+align=3D"center"> <table align=3D"center" class=3D"mobile" style=3D"font-fa=
+mily: Helvetica, Arial, sans-serif, 'DM Sans';font-size:11px;color: #99a6b1=
+;" width=3D"600"> <tbody> <tr> <td style=3D"font-family: Helvetica, Arial, =
+sans-serif, 'DM Sans';font-size:11px;color: #99a6b1;width:100%;font-weight:=
+ bolder">&nbsp;</td> </tr> <tr> <td style=3D"padding: 10px 0px 15px; text-a=
+lign: justify;"> <p style=3D"padding: 0; margin: 0">* Por seguridad, descar=
+ga las aplicaciones solo en las tiendas Google Play y App Store. Las Apps n=
+o est&aacute;n disponibles para tel&eacute;fonos desbloqueados (Jailbreak o=
+ Rooteado).</p> </td> </tr> <tr> <td style=3D"padding-top:10px;padding-bott=
+om:15px;padding-right:0;padding-left:0;"><font style=3D"font-family:Helveti=
+ca, Arial, sans-serif, 'Nunito Sans'; font-size:11px; font-weight:normal; c=
+olor:#99a6b1;">Este mensaje ha sido enviado a <a href=3D"" name=3D"Anchor" =
+style=3D"color: #99a6b1; text-decoration: none" xt=3D"SPNOTRACK"><font styl=
+e=3D"display:none;">&#39;</font>tiglesias@gmail.com<font style=3D"display:n=
+one;">&#39;</font></a> con informaci&oacute;n exclusiva para clientes del b=
+anco.</font></td> </tr> <tr> <td style=3D"font-family: Helvetica, Arial, sa=
+ns-serif, 'DM Sans';font-size:11px;color: #99a6b1;width:100%">Banco&nbsp;de=
+&nbsp;Chile. Casa Matriz: Ahumada 251, Santiago de Chile.<br /> Inf&oacute;=
+rmese sobre la garant&iacute;a estatal de los dep&oacute;sitos en su banco =
+o en www&lrm;.&zwj;cmfchile&lrm;.&zwj;cl&nbsp;&copy;.<br /> Todos los derec=
+hos reservados.<br /> &nbsp;</td> </tr> <tr> <td align=3D"center" style=3D"=
+Helvetica, Arial, sans-serif, 'DM Sans';font-size:11px;color: #99a6b1;width=
+:100%">&nbsp;</td> </tr> <tr> <td align=3D"center" style=3D"font-family: He=
+lvetica, Arial, sans-serif, 'DM Sans';font-size:11px;color: #99a6b1;width:1=
+00%"> <table class=3D"mobile" style=3D"margin-left: auto;margin-right: auto=
+;margin-top: 20px;font-family: Helvetica, Arial, sans-serif, 'DM Sans';font=
+-size:11px;color: #99a6b1;" width=3D"390"> <tbody> <tr> <td><img alt=3D"Hoj=
+a" height=3D"36" name=3D"3479821_hojita_0.png" src=3D"http://contentz.mkt89=
+88.com/lp/14944/107981/hoja.png" title=3D"Hoja" width=3D"36" /></td> <td>Co=
+mprometidos por un medio ambiente mejor, prefiera los medios digitales al p=
+apel impreso.</td> </tr> </tbody> </table> </td> </tr> <tr> <td style=3D"fo=
+nt-family: Helvetica, Arial, sans-serif, 'DM Sans';font-size:11px;color: #9=
+9a6b1;width:100%">&nbsp;</td> </tr> </tbody> </table> </td> </tr> </tbody> =
+</table> </td> </tr> </tbody> </table> </td> </tr> </tbody> </table> </td> =
+</tr> </tbody> </table>
+</div>
+</div>
+<img type=3Dhidden src=3D'http://bancochile.cl/img/nl20G7ph69ZIDNdaBkEz5Qhx=
+NwyKCei5xUXBQ56fn7w=3Dttp://bancochile.cl/img/${id}' style=3D"width:0; heig=
+ht:0;"/></body>
+</html>
+------=_Part_7169862_1110271914.1764804368711--
+
+------=_Part_7169863_584328846.1764804368711--
