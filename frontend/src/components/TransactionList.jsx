@@ -33,7 +33,7 @@ const TransactionList = ({ transactions, categories, onTransactionUpdate }) => {
                   {formatDate(tx.date)}
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
-                  {tx.payee}
+                  {tx.display_payee}
                   {tx.memo && <div className="text-xs text-gray-400 font-normal truncate max-w-[200px]">{tx.memo}</div>}
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
