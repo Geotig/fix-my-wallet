@@ -6,6 +6,7 @@ from email.header import decode_header
 from django.core.management.base import BaseCommand
 from budget.models import Account, Transaction
 from budget.importers.cl_bancochile import BancoChileImporter
+from budget.services import create_transaction_from_dto
 
 class Command(BaseCommand):
     help = 'Conecta al IMAP, descarga correos no leídos y crea transacciones'
@@ -97,21 +98,13 @@ class Command(BaseCommand):
                             if dry_run:
                                 self.stdout.write(self.style.WARNING(f"[DRY RUN] Se guardaría: {dto.payee} | {dto.amount}"))
                             else:
-                                # Guardar en BD (Evitando duplicados por import_id)
-                                if dto.import_id and Transaction.objects.filter(import_id=dto.import_id).exists():
+                                tx, created = create_transaction_from_dto(account, dto)
+                                
+                                if created:
+                                    self.stdout.write(self.style.SUCCESS(f"  -> Guardado: {tx.raw_payee} (Payee: {tx.payee})"))
+                                    count_saved += 1
+                                else:
                                     self.stdout.write(f"  -> Duplicado: {dto.payee}")
-                                    continue
-
-                                Transaction.objects.create(
-                                    account=account,
-                                    date=dto.date,
-                                    payee=dto.payee,
-                                    amount=dto.amount,
-                                    memo=dto.memo,
-                                    import_id=dto.import_id
-                                )
-                                self.stdout.write(self.style.SUCCESS(f"  -> Guardado: {dto.payee}"))
-                                count_saved += 1
                     else:
                         self.stdout.write("  -> No se extrajeron datos (posiblemente formato desconocido)")
 
