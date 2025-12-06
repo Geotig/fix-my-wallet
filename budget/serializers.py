@@ -26,14 +26,33 @@ class TransactionSerializer(serializers.ModelSerializer):
     category_name = serializers.ReadOnlyField(source='category.name')
     display_payee = serializers.SerializerMethodField()
     payee_name = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    is_transfer = serializers.SerializerMethodField()
+    is_adjustment = serializers.SerializerMethodField()
+    transfer_account_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Transaction
-        fields = ['id', 'date', 'raw_payee', 'payee', 'payee_name',  'display_payee','amount', 'memo', 'account', 'account_name', 'category', 'category_name']
+        fields = [
+            'id', 'date', 'raw_payee', 'payee', 'payee_name',  'display_payee',
+            'amount', 'memo', 'account', 'account_name',
+            'category', 'category_name',
+            'is_transfer', 'is_adjustment', 'transfer_account_name'
+            ]
 
         extra_kwargs = {
             'raw_payee': {'required': False}
         }
+
+    def get_is_transfer(self, obj):
+        return obj.transfer_transaction is not None
+    
+    def get_is_adjustment(self, obj):
+        return obj.raw_payee == "Ajuste Manual de Saldo"
+    
+    def get_transfer_account_name(self, obj):
+        if obj.transfer_transaction:
+            return obj.transfer_transaction.account.name
+        return None
 
     def get_display_payee(self, obj):
         if obj.payee:
