@@ -83,9 +83,15 @@ class Transaction(models.Model):
     date = models.DateField(default=date.today)
     payee = models.ForeignKey(Payee, on_delete=models.SET_NULL, null=True, blank=True, related_name='transactions')
     amount = models.DecimalField(max_digits=12, decimal_places=0) 
-    raw_payee = models.CharField(max_length=200) 
-    # Convención: Gastos son negativos, Ingresos positivos. O puedes usar un campo booleano 'is_expense'.
-    # Por ahora usemos: Negativo = Gasto, Positivo = Ingreso.
+    raw_payee = models.CharField(max_length=200)
+
+    transfer_transaction = models.OneToOneField(
+        'self',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='linked_transfer',
+    )
     
     memo = models.TextField(blank=True, null=True)
     

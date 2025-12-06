@@ -73,6 +73,29 @@ function App() {
     setTransactions(prev => prev.map(tx => tx.id === updatedTx.id ? updatedTx : tx));
   };
 
+  const handleLinkTransfer = async (id1, id2) => {
+    try {
+        const res = await apiFetch('/api/transactions/link_transfer/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id_1: id1, id_2: id2 })
+        });
+
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.error || 'Error al vincular');
+        }
+
+        // Recargar datos para ver los cambios (iconos, etc)
+        await fetchAllData();
+        alert("¡Transferencia vinculada!");
+
+    } catch (error) {
+        console.error(error);
+        alert(error.message);
+    }
+  };
+
   const renderContent = () => {
     if (view === 'budget') return <BudgetView />;
     if (view === 'accounts') return <AccountsView />; 
@@ -108,6 +131,7 @@ function App() {
                     transactions={transactions} 
                     categories={categories} 
                     onTransactionUpdate={handleTransactionUpdate} 
+                    onLinkTransfer={handleLinkTransfer}
                 />
             )}
         </>
