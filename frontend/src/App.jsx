@@ -6,7 +6,7 @@ import AccountsView from './components/AccountsView'
 import { apiFetch } from './api';
 
 function App() {
-  const [view, setView] = useState('transactions');
+  const [view, setView] = useState('budget');
   
   const [transactions, setTransactions] = useState([])
   const [categories, setCategories] = useState([])
