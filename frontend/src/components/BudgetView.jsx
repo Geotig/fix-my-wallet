@@ -44,20 +44,33 @@ const BudgetView = () => {
   };
 
   const handleAssignmentChange = async (categoryId, newAmount) => {
+    const oldCategory = budgetData.categories.find(c => c.category_id === categoryId);
+    if (!oldCategory) return;
+    
+    const difference = newAmount - oldCategory.assigned;
+
     const updatedCategories = budgetData.categories.map(cat => {
       if (cat.category_id === categoryId) {
-        const diff = newAmount - cat.assigned;
-        return { ...cat, assigned: newAmount, available: cat.available + diff };
+        return { 
+            ...cat, 
+            assigned: newAmount, 
+            available: cat.available + difference
+        };
       }
       return cat;
     });
     
-    const newTotalAssigned = updatedCategories.reduce((acc, curr) => acc + Number(curr.assigned), 0);
+    const newReadyToAssign = budgetData.ready_to_assign - difference;
+    const newTotalAssigned = budgetData.totals.assigned + difference;
     
     setBudgetData({ 
         ...budgetData, 
+        ready_to_assign: newReadyToAssign, // <--- AQUÍ ESTABA EL FALTANTE
         categories: updatedCategories,
-        totals: { ...budgetData.totals, assigned: newTotalAssigned }
+        totals: { 
+            ...budgetData.totals, 
+            assigned: newTotalAssigned 
+        }
     });
 
     try {
@@ -80,41 +93,48 @@ const BudgetView = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header: Navegación y Resumen */}
-      <Card className="p-4 flex flex-col md:flex-row justify-between items-center bg-white">
-        
-        {/* Navegación Mes */}
-        <div className="flex items-center space-x-4 mb-4 md:mb-0">
-          <Button variant="ghost" size="sm" onClick={() => changeMonth(-1)}>
-            &lt; Anterior
-          </Button>
-          <h2 className="text-xl font-bold capitalize w-48 text-center text-gray-800">
-            {formatMonth(currentDate)}
-          </h2>
-          <Button variant="ghost" size="sm" onClick={() => changeMonth(1)}>
-            Siguiente &gt;
-          </Button>
-        </div>
+      {/* Header: Navegación y RTA */}
+      <Card className="p-6 bg-white mb-6">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+              
+              {/* Navegación Mes (Izquierda) */}
+              <div className="flex items-center space-x-4">
+                  <Button variant="ghost" size="sm" onClick={() => changeMonth(-1)}>&lt;</Button>
+                  <h2 className="text-2xl font-bold capitalize text-gray-800 w-48 text-center">
+                      {formatMonth(currentDate)}
+                  </h2>
+                  <Button variant="ghost" size="sm" onClick={() => changeMonth(1)}>&gt;</Button>
+              </div>
 
-        {/* Resumen Totales */}
-        <div className="flex space-x-8 text-sm">
-            <div className="text-center">
-                <div className="text-gray-500 uppercase text-xs font-bold mb-1">Asignado</div>
-                <div className="font-bold text-gray-800 text-lg">{budgetData && formatCurrency(budgetData.totals.assigned)}</div>
-            </div>
-            <div className="text-center">
-                <div className="text-gray-500 uppercase text-xs font-bold mb-1">Actividad</div>
-                <div className="font-bold text-red-600 text-lg">{budgetData && formatCurrency(budgetData.totals.activity)}</div>
-            </div>
-            <div className="text-center">
-                <div className="text-gray-500 uppercase text-xs font-bold mb-1">Disponible</div>
-                <div className={`font-bold text-lg ${
-                    (budgetData && budgetData.totals.available < 0) ? 'text-red-600' : 'text-green-600'
-                }`}>
-                    {budgetData && formatCurrency(budgetData.totals.available)}
-                </div>
-            </div>
-        </div>
+              {/* EL NÚMERO MÁGICO (Centro/Derecha) */}
+              <div className="bg-blue-50 px-6 py-3 rounded-xl border border-blue-100 flex flex-col items-center min-w-[200px]">
+                  <span className="text-xs font-bold text-blue-600 uppercase tracking-wider mb-1">
+                      Por Asignar
+                  </span>
+                  <span className={`text-3xl font-extrabold ${
+                      (budgetData?.ready_to_assign || 0) < 0 ? 'text-red-600' : 'text-green-600'
+                  }`}>
+                      {budgetData && formatCurrency(budgetData.ready_to_assign)}
+                  </span>
+              </div>
+
+          </div>
+
+          {/* Totales Secundarios (Abajo, más discretos) */}
+          <div className="flex justify-center space-x-12 mt-6 pt-6 border-t border-gray-100 text-sm">
+              <div className="text-center">
+                  <div className="text-gray-400 mb-1">Total Asignado</div>
+                  <div className="font-semibold text-gray-700">{budgetData && formatCurrency(budgetData.totals.assigned)}</div>
+              </div>
+              <div className="text-center">
+                  <div className="text-gray-400 mb-1">Total Gastado</div>
+                  <div className="font-semibold text-red-600">{budgetData && formatCurrency(budgetData.totals.activity)}</div>
+              </div>
+              <div className="text-center">
+                  <div className="text-gray-400 mb-1">Restante Categorías</div>
+                  <div className="font-semibold text-gray-700">{budgetData && formatCurrency(budgetData.totals.available)}</div>
+              </div>
+          </div>
       </Card>
 
       {/* Tabla de Presupuesto */}

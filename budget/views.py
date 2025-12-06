@@ -77,6 +77,23 @@ class BudgetSummaryView(views.APIView):
         total_activity = 0
         total_available = 0
 
+        liquid_accounts = Account.objects.filter(
+            account_type__in=['CHECKING', 'SAVINGS', 'CASH']
+        )
+        
+        total_cash = 0
+        for acc in liquid_accounts:
+            # Sumar transacciones de la cuenta
+            balance = acc.transactions.aggregate(Sum('amount'))['amount__sum'] or 0
+            total_cash += balance
+        
+        total_assigned_month = BudgetAssignment.objects.filter(
+            month=target_month
+        ).aggregate(Sum('amount'))['amount__sum'] or 0
+
+        # 3. Cálculo Final
+        ready_to_assign = total_cash - total_assigned_month
+
         for cat in categories:
             # A. Asignado
             assignment = BudgetAssignment.objects.filter(category=cat, month=target_month).first()
@@ -108,6 +125,7 @@ class BudgetSummaryView(views.APIView):
         return Response({
             "month": target_month.strftime('%Y-%m-%d'),
             "categories": summary,
+            "ready_to_assign": ready_to_assign, 
             "totals": {
                 "assigned": total_assigned,
                 "activity": total_activity,
