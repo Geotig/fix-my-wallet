@@ -7,8 +7,8 @@ from datetime import datetime, date
 from decimal import Decimal
 
 # Importamos todos los modelos necesarios, incluyendo CategoryGroup
-from .models import Transaction, Account, Category, CategoryGroup, BudgetAssignment
-from .serializers import TransactionSerializer, AccountSerializer, CategorySerializer, CategoryGroupSerializer
+from .models import Transaction, Account, Category, CategoryGroup, BudgetAssignment, Payee
+from .serializers import TransactionSerializer, AccountSerializer, CategorySerializer, CategoryGroupSerializer, PayeeSerializer
 
 class AccountViewSet(viewsets.ModelViewSet):
     queryset = Account.objects.all()
@@ -47,6 +47,10 @@ class CategoryGroupViewSet(viewsets.ModelViewSet):
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
+
+class PayeeViewSet(viewsets.ReadOnlyModelViewSet): # ReadOnly porque solo queremos listarlos para sugerencias
+    queryset = Payee.objects.all().order_by('name')
+    serializer_class = PayeeSerializer
 
 class TransactionViewSet(viewsets.ModelViewSet):
     queryset = Transaction.objects.all().order_by('-date', '-id')

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.db.models import Sum
-from .models import Transaction, Account, Category, CategoryGroup
+from .models import Transaction, Account, Category, CategoryGroup, Payee
 
 class AccountSerializer(serializers.ModelSerializer):
     # Campo calculado: No existe en la tabla, se genera al vuelo
@@ -26,6 +26,11 @@ class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = ['id', 'name', 'group', 'group_name', 'is_active', 'order']
+
+class PayeeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Payee
+        fields = ['id', 'name']
 
 class TransactionSerializer(serializers.ModelSerializer):
     # Para mostrar el nombre de la cuenta en vez de solo el ID (opcional pero útil)

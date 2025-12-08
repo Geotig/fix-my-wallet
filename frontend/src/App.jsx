@@ -3,6 +3,8 @@ import Layout from './components/Layout'
 import TransactionList from './components/TransactionList'
 import BudgetView from './components/BudgetView'
 import AccountsView from './components/AccountsView'
+import Modal from './components/ui/Modal'
+import TransactionForm from './components/TransactionForm'
 import { apiFetch } from './api';
 
 function App() {
@@ -11,7 +13,8 @@ function App() {
   const [transactions, setTransactions] = useState([])
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null) // <--- Nuevo estado para errores
+  const [error, setError] = useState(null)
+  const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false)
 
   const fetchAllData = async () => {
       setError(null);
@@ -104,36 +107,52 @@ function App() {
         <>
             <div className="mb-6 flex justify-between items-center">
                 <div>
-                <h2 className="text-3xl font-bold text-gray-800">Transacciones</h2>
-                <p className="text-gray-600">Clasifica tus gastos importados.</p>
+                    <h2 className="text-3xl font-bold text-gray-800">Transacciones</h2>
+                    <p className="text-gray-600">Clasifica tus gastos importados.</p>
                 </div>
-                {/* Botón manual para probar refresco */}
-                <button 
-                    onClick={fetchAllData}
-                    className="text-sm bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded text-gray-700"
-                >
-                    Refrescar Ahora
-                </button>
+                <div className="flex gap-2">
+                    <button 
+                        onClick={fetchAllData}
+                        className="text-sm bg-gray-200 hover:bg-gray-300 px-3 py-2 rounded text-gray-700 font-medium transition"
+                    >
+                        🔄 Refrescar
+                    </button>
+                    {/* BOTÓN NUEVA TRANSACCIÓN */}
+                    <button 
+                        onClick={() => setIsTransactionModalOpen(true)}
+                        className="text-sm bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-bold shadow transition"
+                    >
+                        + Nueva
+                    </button>
+                </div>
             </div>
 
-            {/* Muestra el error si existe */}
-            {error && (
-                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-                    <p className="font-bold">Ocurrió un error:</p>
-                    <p>{error}</p>
-                </div>
-            )}
+            {/* ... Error y Loading ... */}
 
-            {loading ? (
-                <div className="text-center py-10 text-gray-500">Cargando datos...</div>
-            ) : (
+            {!loading && (
                 <TransactionList 
                     transactions={transactions} 
                     categories={categories} 
-                    onTransactionUpdate={handleTransactionUpdate} 
+                    onTransactionUpdate={handleTransactionUpdate}
                     onLinkTransfer={handleLinkTransfer}
                 />
             )}
+
+            {/* MODAL DE NUEVA TRANSACCIÓN */}
+            <Modal
+                isOpen={isTransactionModalOpen}
+                onClose={() => setIsTransactionModalOpen(false)}
+                title="Nueva Transacción"
+                // No pasamos footer aquí porque el formulario tiene sus propios botones
+            >
+                <TransactionForm 
+                    onSuccess={() => {
+                        setIsTransactionModalOpen(false);
+                        fetchAllData(); // Recargar la lista al guardar
+                    }}
+                    onCancel={() => setIsTransactionModalOpen(false)}
+                />
+            </Modal>
         </>
     );
   };
