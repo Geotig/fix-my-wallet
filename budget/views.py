@@ -1,13 +1,14 @@
 from django.db.models import Sum
-from django.db import transaction # <--- ESTO FALTABA para el link_transfer
+from django.db import transaction
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import viewsets, views
-from datetime import datetime, date # <--- ESTO ES CRUCIAL para las fechas
-from decimal import Decimal # <--- ESTO ES CRUCIAL para los montos
+from datetime import datetime, date
+from decimal import Decimal
 
-from .models import Transaction, Account, Category, BudgetAssignment
-from .serializers import TransactionSerializer, AccountSerializer, CategorySerializer
+# Importamos todos los modelos necesarios, incluyendo CategoryGroup
+from .models import Transaction, Account, Category, CategoryGroup, BudgetAssignment
+from .serializers import TransactionSerializer, AccountSerializer, CategorySerializer, CategoryGroupSerializer
 
 class AccountViewSet(viewsets.ModelViewSet):
     queryset = Account.objects.all()
@@ -15,28 +16,21 @@ class AccountViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def reconcile(self, request, pk=None):
-        """
-        Ajusta el saldo de la cuenta creando una transacción de ajuste.
-        """
         account = self.get_object()
         target_balance = request.data.get('target_balance')
 
         if target_balance is None:
             return Response({"error": "Se requiere target_balance"}, status=400)
 
-        # 1. Calcular saldo actual
         current_balance = account.transactions.aggregate(Sum('amount'))['amount__sum'] or 0
-        
-        # 2. Calcular diferencia (Convertimos a Decimal para seguridad)
         diff = Decimal(str(target_balance)) - Decimal(current_balance)
 
         if diff == 0:
             return Response({"status": "Saldo ya cuadrado", "balance": current_balance})
 
-        # 3. Crear transacción de ajuste
         Transaction.objects.create(
             account=account,
-            payee=None, # Ajuste manual no tiene Payee
+            payee=None,
             raw_payee="Ajuste Manual de Saldo",
             amount=diff,
             date=date.today(),
@@ -44,6 +38,11 @@ class AccountViewSet(viewsets.ModelViewSet):
         )
 
         return Response({"status": "Ajustado", "adjustment": diff, "new_balance": target_balance})
+
+# Agregamos el ViewSet para los grupos por si queremos gestionarlos vía API directa
+class CategoryGroupViewSet(viewsets.ModelViewSet):
+    queryset = CategoryGroup.objects.all()
+    serializer_class = CategoryGroupSerializer
 
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
@@ -56,9 +55,6 @@ class TransactionViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'])
     def link_transfer(self, request):
-        """
-        Recibe dos IDs de transacciones y las vincula como transferencia.
-        """
         id1 = request.data.get('id_1')
         id2 = request.data.get('id_2')
 
@@ -66,7 +62,6 @@ class TransactionViewSet(viewsets.ModelViewSet):
             return Response({"error": "Faltan IDs"}, status=400)
 
         try:
-            # Usamos transaction.atomic para que sea todo o nada
             with transaction.atomic():
                 tx1 = Transaction.objects.get(pk=id1)
                 tx2 = Transaction.objects.get(pk=id2)
@@ -74,14 +69,10 @@ class TransactionViewSet(viewsets.ModelViewSet):
                 if tx1.id == tx2.id:
                     return Response({"error": "No puedes vincular una transacción consigo misma"}, status=400)
 
-                # Vincular
                 tx1.transfer_transaction = tx2
                 tx2.transfer_transaction = tx1
-                
-                # Limpiar categorías al unir
                 tx1.category = None
                 tx2.category = None
-
                 tx1.save()
                 tx2.save()
 
@@ -94,17 +85,13 @@ class TransactionViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def unlink_transfer(self, request, pk=None):
-        """Rompe el vínculo de una transferencia."""
         tx = self.get_object()
         if tx.transfer_transaction:
             partner = tx.transfer_transaction
-            
             tx.transfer_transaction = None
             partner.transfer_transaction = None
-            
             tx.save()
             partner.save()
-            
         return Response({"status": "Vínculo roto"})
 
 class BudgetSummaryView(views.APIView):
@@ -129,56 +116,71 @@ class BudgetSummaryView(views.APIView):
             balance = acc.transactions.aggregate(Sum('amount'))['amount__sum'] or 0
             total_cash += balance
 
-        # 2. RTA: Calcular Total Asignado este mes
+        # 2. RTA: Calcular Total Asignado este mes (Desde la base de datos)
         total_assigned_month = BudgetAssignment.objects.filter(
             month=target_month
         ).aggregate(Sum('amount'))['amount__sum'] or 0
 
         ready_to_assign = total_cash - total_assigned_month
 
-        # 3. Datos por Categoría
-        categories = Category.objects.all()
-        summary = []
+        # --- AQUÍ ESTABA EL ERROR: Inicialización de variables globales ---
+        total_assigned_global = 0
+        total_activity_global = 0
+        total_available_global = 0
         
-        total_assigned = 0
-        total_activity = 0
-        total_available = 0
+        # 3. Datos Agrupados
+        groups = CategoryGroup.objects.filter(is_active=True).order_by('order', 'name')
+        grouped_data = []
 
-        for cat in categories:
-            assignment = BudgetAssignment.objects.filter(category=cat, month=target_month).first()
-            assigned_amount = assignment.amount if assignment else 0
-
-            # FILTRO IMPORTANTE: transfer_transaction__isnull=True para no sumar transferencias
-            activity_result = Transaction.objects.filter(
-                category=cat,
-                date__year=target_month.year,
-                date__month=target_month.month,
-                transfer_transaction__isnull=True 
-            ).aggregate(total=Sum('amount'))
+        for group in groups:
+            group_categories = []
+            cats = group.categories.filter(is_active=True).order_by('order', 'name')
             
-            activity_amount = activity_result['total'] or 0
-            available_amount = assigned_amount + activity_amount
+            for cat in cats:
+                assignment = BudgetAssignment.objects.filter(category=cat, month=target_month).first()
+                assigned_amount = assignment.amount if assignment else 0
 
-            summary.append({
-                "category_id": cat.id,
-                "category_name": cat.name,
-                "assigned": assigned_amount,
-                "activity": activity_amount,
-                "available": available_amount
+                activity_result = Transaction.objects.filter(
+                    category=cat,
+                    date__year=target_month.year,
+                    date__month=target_month.month,
+                    transfer_transaction__isnull=True 
+                ).aggregate(total=Sum('amount'))
+                
+                activity_amount = activity_result['total'] or 0
+                available_amount = assigned_amount + activity_amount
+
+                # Acumulamos en los globales para el footer
+                total_assigned_global += assigned_amount
+                total_activity_global += activity_amount
+                total_available_global += available_amount
+
+                group_categories.append({
+                    "category_id": cat.id,
+                    "category_name": cat.name,
+                    "assigned": assigned_amount,
+                    "activity": activity_amount,
+                    "available": available_amount
+                })
+            
+            # Solo añadimos el grupo si tiene categorías (opcional, aquí lo añadimos siempre)
+            grouped_data.append({
+                "group_id": group.id,
+                "group_name": group.name,
+                "categories": group_categories
             })
 
-            total_assigned += assigned_amount
-            total_activity += activity_amount
-            total_available += available_amount
+        # Si hay categorías "huérfanas" (sin grupo), podríamos manejarlas aquí,
+        # pero por ahora asumimos que todas tienen grupo gracias al Admin.
 
         return Response({
             "month": target_month.strftime('%Y-%m-%d'),
             "ready_to_assign": ready_to_assign,
-            "categories": summary,
+            "groups": grouped_data,
             "totals": {
-                "assigned": total_assigned,
-                "activity": total_activity,
-                "available": total_available
+                "assigned": total_assigned_global,
+                "activity": total_activity_global,
+                "available": total_available_global
             }
         })
 

@@ -18,19 +18,35 @@ class Account(models.Model):
     def __str__(self):
         return f"{self.name} ({self.get_account_type_display()})"
 
+class CategoryGroup(models.Model):
+    name = models.CharField(max_length=100)
+    # is_active para soft delete de grupos también
+    is_active = models.BooleanField(default=True)
+    # Para ordenar los grupos visualmente (0, 1, 2...)
+    order = models.PositiveIntegerField(default=0) 
+
+    class Meta:
+        ordering = ['order', 'name']
+
+    def __str__(self):
+        return self.name
+
 class Category(models.Model):
     """
     Tus 'Sobres' o 'Baldes'. 
     Ej: 'Supermercado', 'Arriendo', 'Ahorro Vacaciones'.
     """
     name = models.CharField(max_length=100)
-    # A futuro aquí pondremos metas de presupuesto, grupos, etc.
+    group = models.ForeignKey(CategoryGroup, on_delete=models.CASCADE, related_name='categories')
+    is_active = models.BooleanField(default=True)
+    order = models.PositiveIntegerField(default=0)
     
     class Meta:
         verbose_name_plural = "Categories"
+        ordering = ['order', 'name']
 
     def __str__(self):
-        return self.name
+        return f"{self.group.name} - {self.name}"
 
 class BudgetAssignment(models.Model):
     """
