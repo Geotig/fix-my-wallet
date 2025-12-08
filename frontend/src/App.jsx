@@ -12,65 +12,55 @@ function App() {
   
   const [transactions, setTransactions] = useState([])
   const [categories, setCategories] = useState([])
+  const [accounts, setAccounts] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false)
 
   const fetchAllData = async () => {
-      setError(null);
-      let txData = [];
-      let catData = [];
+    // Nota: Quitamos setError(null) al inicio para no borrar errores previos si es un refresco silencioso
+    // o lo manejamos con cuidado.
+    const timestamp = new Date().getTime(); 
 
-      // 1. Cargar Transacciones
-      try {
-        console.log("Cargando Transacciones...");
-        const txRes = await apiFetch('/api/transactions/', { headers: { 'Cache-Control': 'no-cache' } });
-        if (!txRes.ok) throw new Error(`Error HTTP Transacciones: ${txRes.status}`);
-        const data = await txRes.json();
-        txData = data.results || data;
-        setTransactions(txData);
-      } catch (err) {
-        console.error("Fallo Transacciones:", err);
-        // No seteamos error aquí para intentar cargar categorías de todas formas
-      }
+    try {
+      const [txRes, catRes, accRes] = await Promise.all([
+        apiFetch(`/api/transactions/?t=${timestamp}`),
+        apiFetch(`/api/categories/?t=${timestamp}`),
+        apiFetch(`/api/accounts/?t=${timestamp}`)
+      ]);
 
-      // 2. Cargar Categorías
-      try {
-        console.log("Cargando Categorías...");
-        const catRes = await apiFetch('/api/categories/', { headers: { 'Cache-Control': 'no-cache' } });
-        if (!catRes.ok) throw new Error(`Error HTTP Categorías: ${catRes.status}`);
-        const data = await catRes.json();
-        catData = data.results || data;
-        setCategories(catData);
-      } catch (err) {
-        console.error("Fallo Categorías:", err);
-      }
-
-      setLoading(false);
+      if (!txRes.ok) throw new Error("Error cargando transacciones");
       
-      // Si ambas están vacías, asumimos que hubo un error de red general
-      if (txData.length === 0 && catData.length === 0) {
-          setError("No se pudo conectar con el servidor. Revisa si el backend está corriendo.");
-      }
+      const txData = await txRes.json();
+      const catData = await catRes.json();
+      const accData = await accRes.json();
+      
+      setTransactions(txData.results || txData);
+      setCategories(catData.results || catData);
+      setAccounts(accData.results || accData);
+
+    } catch (err) {
+      console.error("Error cargando datos:", err);
+      setError("No se pudo conectar con el servidor.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Cargar al inicio y al cambiar vista
+  // --- CORRECCIÓN 1: Cargar SIEMPRE al inicio ---
   useEffect(() => {
-    if (view === 'transactions') {
-        fetchAllData();
-    }
-  }, [view]);
+    fetchAllData();
+  }, []); // Array vacío = Ejecutar solo una vez al montar el componente
 
-  // Auto-refresco
+  // Auto-refresco (Polling)
   useEffect(() => {
     const interval = setInterval(() => {
-        if (view === 'transactions') {
-            // Nota: Aquí podrías hacer fetch silencioso sin cambiar loading
-            fetchAllData();
-        }
+        // Opcional: Podrías querer refrescar siempre, no solo en transacciones
+        fetchAllData();
     }, 30000);
     return () => clearInterval(interval);
-  }, [view]);
+  }, []);
 
   const handleTransactionUpdate = (updatedTx) => {
     setTransactions(prev => prev.map(tx => tx.id === updatedTx.id ? updatedTx : tx));
@@ -89,7 +79,6 @@ function App() {
             throw new Error(err.error || 'Error al vincular');
         }
 
-        // Recargar datos para ver los cambios (iconos, etc)
         await fetchAllData();
         alert("¡Transferencia vinculada!");
 
@@ -101,7 +90,8 @@ function App() {
 
   const renderContent = () => {
     if (view === 'budget') return <BudgetView />;
-    if (view === 'accounts') return <AccountsView />; 
+    // Pasamos fetchAllData a AccountsView para que actualice la barra lateral al editar saldos
+    if (view === 'accounts') return <AccountsView onAccountsChange={fetchAllData} />; 
 
     return (
         <>
@@ -112,12 +102,11 @@ function App() {
                 </div>
                 <div className="flex gap-2">
                     <button 
-                        onClick={fetchAllData}
+                        onClick={() => { setLoading(true); fetchAllData(); }}
                         className="text-sm bg-gray-200 hover:bg-gray-300 px-3 py-2 rounded text-gray-700 font-medium transition"
                     >
                         🔄 Refrescar
                     </button>
-                    {/* BOTÓN NUEVA TRANSACCIÓN */}
                     <button 
                         onClick={() => setIsTransactionModalOpen(true)}
                         className="text-sm bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-bold shadow transition"
@@ -126,8 +115,6 @@ function App() {
                     </button>
                 </div>
             </div>
-
-            {/* ... Error y Loading ... */}
 
             {!loading && (
                 <TransactionList 
@@ -138,17 +125,15 @@ function App() {
                 />
             )}
 
-            {/* MODAL DE NUEVA TRANSACCIÓN */}
             <Modal
                 isOpen={isTransactionModalOpen}
                 onClose={() => setIsTransactionModalOpen(false)}
                 title="Nueva Transacción"
-                // No pasamos footer aquí porque el formulario tiene sus propios botones
             >
                 <TransactionForm 
                     onSuccess={() => {
                         setIsTransactionModalOpen(false);
-                        fetchAllData(); // Recargar la lista al guardar
+                        fetchAllData();
                     }}
                     onCancel={() => setIsTransactionModalOpen(false)}
                 />
@@ -158,7 +143,8 @@ function App() {
   };
 
   return (
-    <Layout currentView={view} setView={setView}>
+    // --- CORRECCIÓN 2: accounts escrito correctamente ---
+    <Layout currentView={view} setView={setView} accounts={accounts}>
       {renderContent()}
     </Layout>
   )

@@ -3,9 +3,11 @@ import { apiFetch } from '../api';
 import Button from './ui/Button';
 import Card from './ui/Card';
 import Input from './ui/Input';
+import Select from './ui/Select'; // <--- Usamos el componente del UI Kit
 import Badge from './ui/Badge';
 
-const AccountsView = () => {
+// Recibimos la función del padre para actualizar el Sidebar
+const AccountsView = ({ onAccountsChange }) => {
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -58,7 +60,11 @@ const AccountsView = () => {
       setShowCreate(false);
       setNewAccountName('');
       setInitialBalance('');
+      
+      // Actualizamos la lista local
       await fetchAccounts(); 
+      // Actualizamos la barra lateral (App.jsx)
+      if (onAccountsChange) onAccountsChange();
 
     } catch (error) {
       console.error(error);
@@ -80,7 +86,11 @@ const AccountsView = () => {
             body: JSON.stringify({ target_balance: targetClean })
         });
         if (!res.ok) throw new Error('Error en API');
+        
+        // Actualizamos local y global
         await fetchAccounts();
+        if (onAccountsChange) onAccountsChange();
+
     } catch (error) {
         alert("Error al actualizar saldo");
     }
@@ -102,34 +112,33 @@ const AccountsView = () => {
                     label="Nombre"
                     placeholder="Ej: Banco Estado"
                     required
+                    containerClassName="flex-1 min-w-[200px]" // Ajuste de ancho
                     value={newAccountName} 
                     onChange={e => setNewAccountName(e.target.value)}
                 />
                 
-                {/* El Select es el único que no hemos componenteado aún, lo dejamos "raw" o hacemos un componente Select rápido */}
-                <div>
-                    <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Tipo</label>
-                    <select 
-                        className="w-40 p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 outline-none"
-                        value={newAccountType} onChange={e => setNewAccountType(e.target.value)}
-                    >
-                        <option value="CHECKING">Cuenta Corriente</option>
-                        <option value="CREDIT">Tarjeta Crédito</option>
-                        <option value="SAVINGS">Ahorro</option>
-                        <option value="CASH">Efectivo</option>
-                    </select>
-                </div>
+                <Select 
+                    label="Tipo"
+                    containerClassName="w-48"
+                    value={newAccountType} 
+                    onChange={e => setNewAccountType(e.target.value)}
+                >
+                    <option value="CHECKING">Cuenta Corriente</option>
+                    <option value="CREDIT">Tarjeta Crédito</option>
+                    <option value="SAVINGS">Ahorro</option>
+                    <option value="CASH">Efectivo</option>
+                </Select>
 
                 <Input 
                     label="Saldo Inicial"
                     type="number"
                     placeholder="0"
-                    className="w-32"
+                    containerClassName="w-32"
                     value={initialBalance} 
                     onChange={e => setInitialBalance(e.target.value)}
                 />
 
-                <Button type="submit" variant="success" className="bg-green-600 hover:bg-green-700 text-white">
+                <Button type="submit" variant="primary" className="bg-green-600 hover:bg-green-700">
                     Guardar
                 </Button>
             </form>
