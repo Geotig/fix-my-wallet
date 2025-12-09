@@ -2,6 +2,9 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from datetime import date
+from django.conf import settings
+from cryptography.fernet import Fernet
+import os
 
 class Account(models.Model):
     """Representa una cuenta bancaria, efectivo o tarjeta de crédito."""
@@ -14,9 +17,11 @@ class Account(models.Model):
     name = models.CharField(max_length=100)
     account_type = models.CharField(max_length=10, choices=Type.choices, default=Type.CHECKING)
     balance = models.DecimalField(max_digits=12, decimal_places=0, default=0) # CLP no usa decimales, pero es bueno dejarlos por si acaso
-    
+    identifier = models.CharField(max_length=50, blank=True, null=True, help_text="Identificador único en los correos (ej: últimos 4 dígitos de la tarjeta)")
+
     def __str__(self):
-        return f"{self.name} ({self.get_account_type_display()})"
+        id_str = f" [...{self.identifier}]" if self.identifier else ""
+        return f"{self.name}{id_str} ({self.get_account_type_display()})"
 
 class CategoryGroup(models.Model):
     name = models.CharField(max_length=100)
@@ -118,3 +123,63 @@ class Transaction(models.Model):
 
     def __str__(self):
         return f"{self.date} - {self.payee}: ${self.amount}"
+    
+class EmailSource(models.Model):
+    """
+    Credenciales de conexión (La 'Llave').
+    Ej: Mi Gmail Central, o El Outlook de mi Pareja.
+    """
+    name = models.CharField(max_length=100, help_text="Nombre identificativo (ej: Gmail Casa)")
+    email_host = models.CharField(max_length=100, default='imap.gmail.com')
+    email_port = models.IntegerField(default=993)
+    email_user = models.CharField(max_length=100)
+    email_password_encrypted = models.BinaryField()
+    
+    last_connection_check = models.DateTimeField(null=True, blank=True)
+    status_message = models.TextField(blank=True, null=True)
+
+    def set_password(self, raw_password):
+        # ... (misma lógica de encriptación que tenías) ...
+        key = os.environ.get('ENCRYPTION_KEY')
+        f = Fernet(key)
+        self.email_password_encrypted = f.encrypt(raw_password.encode())
+
+    def get_password(self):
+        # ... (misma lógica) ...
+        key = os.environ.get('ENCRYPTION_KEY')
+        f = Fernet(key)
+        return f.decrypt(self.email_password_encrypted).decode()
+
+    def __str__(self):
+        return f"{self.name} ({self.email_user})"
+
+
+class EmailRule(models.Model):
+    """
+    Reglas de procesamiento (La 'Lógica').
+    Ej: Los correos del Banco Chile en esta fuente van a mi Cta Cte.
+    """
+    source = models.ForeignKey(EmailSource, on_delete=models.CASCADE, related_name='rules')
+    account = models.ForeignKey(Account, on_delete=models.CASCADE, related_name='email_rules')
+    
+    # Filtros
+    search_criteria = models.CharField(max_length=200, default='UNSEEN')
+    filter_recipient_email = models.CharField(
+        max_length=150, 
+        blank=True, 
+        null=True,
+        help_text="Procesar solo correos enviados originalmente a..."
+    )
+    
+    # Parser
+    PARSER_CHOICES = [
+        ('BANCO_CHILE', 'Banco de Chile / Edwards'),
+        ('GENERIC', 'Genérico'),
+    ]
+    parser_type = models.CharField(max_length=50, choices=PARSER_CHOICES, default='BANCO_CHILE')
+    
+    is_active = models.BooleanField(default=True)
+    last_sync = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"Regla: {self.source.name} -> {self.account.name}"

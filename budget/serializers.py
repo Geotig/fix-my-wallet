@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.db.models import Sum
-from .models import Transaction, Account, Category, CategoryGroup, Payee
+from .models import Transaction, Account, Category, CategoryGroup, Payee, EmailSource, EmailRule
 
 class AccountSerializer(serializers.ModelSerializer):
     # Campo calculado: No existe en la tabla, se genera al vuelo
@@ -86,3 +86,47 @@ class TransactionSerializer(serializers.ModelSerializer):
                 validated_data['raw_payee'] = "Transacción Manual"
         
         return super().create(validated_data)
+    
+class EmailSourceSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True, required=False, allow_blank=True)
+
+    class Meta:
+        model = EmailSource
+        fields = ['id', 'name', 'email_host', 'email_port', 'email_user', 'password', 'last_connection_check', 'status_message']
+        extra_kwargs = {'email_password_encrypted': {'write_only': True}}
+
+    def create(self, validated_data):
+        password = validated_data.pop('password', None)
+        instance = super().create(validated_data)
+        if password:
+            instance.set_password(password)
+            instance.save()
+        return instance
+
+    def update(self, instance, validated_data):
+        password = validated_data.pop('password', None)
+        instance = super().update(instance, validated_data)
+        if password:
+            instance.set_password(password)
+            instance.save()
+        return instance
+
+class EmailRuleSerializer(serializers.ModelSerializer):
+    source_name = serializers.ReadOnlyField(source='source.name')
+    account_name = serializers.ReadOnlyField(source='account.name')
+
+    class Meta:
+        model = EmailRule
+        fields = '__all__'
+
+class AccountSerializer(serializers.ModelSerializer):
+    current_balance = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Account
+        # Agregamos 'identifier' a la lista
+        fields = ['id', 'name', 'account_type', 'current_balance', 'identifier'] 
+
+    def get_current_balance(self, obj):
+        total = obj.transactions.aggregate(Sum('amount'))['amount__sum']
+        return total or 0

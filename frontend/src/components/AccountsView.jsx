@@ -14,6 +14,7 @@ const AccountsView = ({ onAccountsChange }) => {
   
   const [newAccountName, setNewAccountName] = useState('');
   const [newAccountType, setNewAccountType] = useState('CHECKING');
+  const [newAccountIdentifier, setNewAccountIdentifier] = useState('');
   const [initialBalance, setInitialBalance] = useState('');
 
   const fetchAccounts = async () => {
@@ -43,7 +44,11 @@ const AccountsView = ({ onAccountsChange }) => {
       const res = await apiFetch('/api/accounts/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newAccountName, account_type: newAccountType })
+        body: JSON.stringify({ 
+          name: newAccountName,
+          account_type: newAccountType,
+          identifier: newAccountIdentifier
+        })
       });
       
       if (!res.ok) throw new Error('Error creando cuenta');
@@ -60,7 +65,8 @@ const AccountsView = ({ onAccountsChange }) => {
       setShowCreate(false);
       setNewAccountName('');
       setInitialBalance('');
-      
+      setNewAccountIdentifier('');
+
       // Actualizamos la lista local
       await fetchAccounts(); 
       // Actualizamos la barra lateral (App.jsx)
@@ -130,6 +136,16 @@ const AccountsView = ({ onAccountsChange }) => {
                 </Select>
 
                 <Input 
+                    label="Identificador (4 dígitos)"
+                    placeholder="Ej: 6563"
+                    containerClassName="w-40"
+                    maxLength={10}
+                    value={newAccountIdentifier} 
+                    onChange={e => setNewAccountIdentifier(e.target.value)}
+                    helpText="Para detección automática"
+                />
+
+                <Input 
                     label="Saldo Inicial"
                     type="number"
                     placeholder="0"
@@ -159,6 +175,12 @@ const AccountsView = ({ onAccountsChange }) => {
                     <Badge color="gray" className="uppercase tracking-wider text-[10px]">
                         {acc.account_type}
                     </Badge>
+                    {/* MOSTRAR IDENTIFICADOR SI EXISTE */}
+                        {acc.identifier && (
+                            <Badge color="blue" className="text-[10px]">
+                                ****{acc.identifier}
+                            </Badge>
+                        )}
                 </div>
                 <div className="text-right">
                     <div className={`text-xl font-bold ${acc.current_balance < 0 ? 'text-red-600' : 'text-green-600'}`}>

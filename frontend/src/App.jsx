@@ -5,6 +5,7 @@ import BudgetView from './components/BudgetView'
 import AccountsView from './components/AccountsView'
 import Modal from './components/ui/Modal'
 import TransactionForm from './components/TransactionForm'
+import SettingsView from './components/SettingsView'
 import { apiFetch } from './api';
 
 function App() {
@@ -14,6 +15,7 @@ function App() {
   const [categories, setCategories] = useState([])
   const [accounts, setAccounts] = useState([])
   const [loading, setLoading] = useState(true)
+  const [isSyncing, setIsSyncing] = useState(false);
   const [error, setError] = useState(null)
 
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false)
@@ -88,8 +90,29 @@ function App() {
     }
   };
 
+  const handleManualSync = async () => {
+    setIsSyncing(true); 
+    
+    try {
+        const res = await apiFetch('/api/trigger_sync/', {
+            method: 'POST'
+        });
+        if (!res.ok) throw new Error('Error en sincronización');
+        await fetchAllData(); 
+        
+        console.log("Sincronización finalizada");
+
+    } catch (error) {
+        console.error(error);
+        alert("Hubo un problema al sincronizar correos.");
+    } finally {
+        setIsSyncing(false); // Desactivamos spinner
+    }
+  };
+
   const renderContent = () => {
     if (view === 'budget') return <BudgetView />;
+    if (view === 'settings') return <SettingsView />;
     // Pasamos fetchAllData a AccountsView para que actualice la barra lateral al editar saldos
     if (view === 'accounts') return <AccountsView onAccountsChange={fetchAllData} />; 
 
@@ -101,12 +124,44 @@ function App() {
                     <p className="text-gray-600">Clasifica tus gastos importados.</p>
                 </div>
                 <div className="flex gap-2">
+                    {/* Botón Sincronizar */}
+                    <button 
+                        onClick={handleManualSync}
+                        disabled={isSyncing} // Deshabilitar mientras carga
+                        className={`
+                            text-sm px-3 py-2 rounded font-medium transition flex items-center gap-2
+                            ${isSyncing 
+                                ? 'bg-indigo-50 text-indigo-400 cursor-not-allowed' 
+                                : 'bg-indigo-100 hover:bg-indigo-200 text-indigo-800'}
+                        `}
+                        title="Buscar nuevos correos ahora"
+                    >
+                        {isSyncing ? (
+                            <>
+                                {/* Icono Spinner SVG */}
+                                <svg className="animate-spin h-4 w-4 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <span>Buscando...</span>
+                            </>
+                        ) : (
+                            <>
+                                <span>☁️</span>
+                                <span>Sincronizar</span>
+                            </>
+                        )}
+                    </button>
+
+                    {/* Botón Refrescar (Local) */}
                     <button 
                         onClick={() => { setLoading(true); fetchAllData(); }}
                         className="text-sm bg-gray-200 hover:bg-gray-300 px-3 py-2 rounded text-gray-700 font-medium transition"
                     >
                         🔄 Refrescar
                     </button>
+                    
+                    {/* Botón Nueva */}
                     <button 
                         onClick={() => setIsTransactionModalOpen(true)}
                         className="text-sm bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-bold shadow transition"

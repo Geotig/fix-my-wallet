@@ -1,5 +1,6 @@
 from django.db.models import Sum
 from django.db import transaction
+from django.core.management import call_command
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import viewsets, views
@@ -7,8 +8,8 @@ from datetime import datetime, date
 from decimal import Decimal
 
 # Importamos todos los modelos necesarios, incluyendo CategoryGroup
-from .models import Transaction, Account, Category, CategoryGroup, BudgetAssignment, Payee
-from .serializers import TransactionSerializer, AccountSerializer, CategorySerializer, CategoryGroupSerializer, PayeeSerializer
+from .models import Transaction, Account, Category, CategoryGroup, BudgetAssignment, Payee, EmailSource, EmailRule
+from .serializers import TransactionSerializer, AccountSerializer, CategorySerializer, CategoryGroupSerializer, PayeeSerializer, EmailSourceSerializer, EmailRuleSerializer
 
 class AccountViewSet(viewsets.ModelViewSet):
     queryset = Account.objects.all()
@@ -213,3 +214,24 @@ class BudgetAssignmentView(views.APIView):
             return Response({"error": "Categoría no encontrada"}, status=404)
         except Exception as e:
             return Response({"error": str(e)}, status=400)
+
+class TriggerSyncView(views.APIView):
+    """
+    Endpoint para disparar la sincronización manual.
+    """
+    def post(self, request):
+        try:
+            # Ejecuta el comando igual que en la terminal
+            # stdout captura la salida para ver qué pasó
+            call_command('fetch_emails')
+            return Response({"status": "Sincronización completada"})
+        except Exception as e:
+            return Response({"error": str(e)}, status=500)
+
+class EmailSourceViewSet(viewsets.ModelViewSet):
+    queryset = EmailSource.objects.all()
+    serializer_class = EmailSourceSerializer
+
+class EmailRuleViewSet(viewsets.ModelViewSet):
+    queryset = EmailRule.objects.all()
+    serializer_class = EmailRuleSerializer

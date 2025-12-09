@@ -16,6 +16,7 @@ class TransactionDTO:
     amount: Decimal
     memo: str = ""
     import_id: Optional[str] = None # Clave única para evitar duplicados
+    account_identifier: Optional[str] = None # Identificador de la cuenta (últimos cuatro dígitos)
 
 class BaseImporter:
     """Clase abstracta que define cómo debe comportarse cualquier importador."""

@@ -8,9 +8,12 @@ router.register(r'accounts', views.AccountViewSet)
 router.register(r'groups', views.CategoryGroupViewSet)
 router.register(r'categories', views.CategoryViewSet)
 router.register(r'payees', views.PayeeViewSet)
+router.register(r'email-sources', views.EmailSourceViewSet)
+router.register(r'email-rules', views.EmailRuleViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
     path('budget_summary/', views.BudgetSummaryView.as_view(), name='budget_summary'),
     path('budget_assignment/', views.BudgetAssignmentView.as_view(), name='budget_assignment'),
+    path('trigger_sync/', views.TriggerSyncView.as_view(), name='trigger_sync'),
 ]

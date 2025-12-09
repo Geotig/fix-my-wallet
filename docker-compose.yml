@@ -11,6 +11,8 @@ services:
       - "8000:8000" # Accederás vía localhost:8000
     depends_on:
       - db
+    env_file:
+      - .env
     environment:
       - DB_NAME=finance_db
       - DB_USER=finance_user
@@ -20,7 +22,18 @@ services:
       - EMAIL_PORT=993
       - EMAIL_USER=geotiglab@gmail.com
       - EMAIL_PASS=ztkufjotmxkuhaof
-  # Servicio 2: Aplicación Frontend con Vite
+  # Servicio 2: Scheduler para tareas periódicas
+  scheduler:
+    build: .
+    command: python manage.py run_scheduler
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      - db
+    restart: unless-stopped
+  # Servicio 3: Aplicación Frontend con Vite
   frontend:
     image: node:20-slim
     working_dir: /app
@@ -32,7 +45,7 @@ services:
     # Comando para desarrollo: instala dependencias y levanta el servidor
     command: sh -c "npm install && npm run dev -- --host"
 
-  # Servicio 2: Base de datos PostgreSQL
+  # Servicio 4: Base de datos PostgreSQL
   db:
     image: postgres:16
     volumes:

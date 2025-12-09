@@ -128,6 +128,9 @@ class BancoChileImporter(BaseImporter):
             else:
                 payee = subject # Fallback solo si falla el regex
 
+            acc_match = re.search(r"\*{4}(\d{4})", text)
+            account_identifier = acc_match.group(1) if acc_match else None
+
             # Monto
             amount_match = re.search(r"\$\s*([\d\.]+)", text)
             amount = 0
@@ -141,7 +144,7 @@ class BancoChileImporter(BaseImporter):
             else:
                 date_obj = date.today()
             
-            return self._create_dto(date_obj, payee, amount, subject)
+            return self._create_dto(date_obj, payee, amount, subject, account_identifier)
 
         except Exception as e:
             logger.error(f"Error parseando Compra/Cargo: {e}")
@@ -213,7 +216,7 @@ class BancoChileImporter(BaseImporter):
         # Manejo de posibles decimales (CLP no usa, pero por robustez)
         return Decimal(clean)
 
-    def _create_dto(self, date_obj, payee, amount, memo):
+    def _create_dto(self, date_obj, payee, amount, memo, account_identifier=None):
         raw_id = f"{date_obj}-{payee}-{abs(amount)}"
         import_id = hashlib.md5(raw_id.encode('utf-8')).hexdigest()
         
@@ -222,5 +225,6 @@ class BancoChileImporter(BaseImporter):
             payee=payee,
             amount=amount,
             memo=memo,
-            import_id=import_id
+            import_id=import_id,
+            account_identifier=account_identifier
         )

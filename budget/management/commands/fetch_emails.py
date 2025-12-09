@@ -1,113 +1,142 @@
-# budget/management/commands/fetch_emails.py
-import os
 import imaplib
 import email
 from email.header import decode_header
 from django.core.management.base import BaseCommand
-from budget.models import Account, Transaction
-from budget.importers.cl_bancochile import BancoChileImporter
+from django.utils import timezone
+from budget.models import EmailSource
 from budget.services import create_transaction_from_dto
+from budget.importers.cl_bancochile import BancoChileImporter
 
 class Command(BaseCommand):
-    help = 'Conecta al IMAP, descarga correos no leídos y crea transacciones'
-
-    def add_arguments(self, parser):
-        parser.add_argument('account_name', type=str, help='Nombre de la cuenta en Django')
-        parser.add_argument('--dry-run', action='store_true', help='No guardar cambios en BD ni marcar como leídos')
+    help = 'Se conecta a las fuentes de correo y procesa las reglas configuradas'
 
     def handle(self, *args, **options):
-        account_name = options['account_name']
-        dry_run = options['dry_run']
-
-        # 1. Obtener Credenciales
-        EMAIL_HOST = os.environ.get('EMAIL_HOST')
-        EMAIL_USER = os.environ.get('EMAIL_USER')
-        EMAIL_PASS = os.environ.get('EMAIL_PASS')
-
-        if not all([EMAIL_HOST, EMAIL_USER, EMAIL_PASS]):
-            self.stdout.write(self.style.ERROR("Faltan variables de entorno de correo"))
-            return
-
-        # 2. Buscar la cuenta en BD
-        try:
-            account = Account.objects.get(name=account_name)
-        except Account.DoesNotExist:
-            self.stdout.write(self.style.ERROR(f"No existe la cuenta '{account_name}'"))
-            return
-
-        # 3. Conexión IMAP
-        self.stdout.write(f"Conectando a {EMAIL_HOST} como {EMAIL_USER}...")
-        try:
-            mail = imaplib.IMAP4_SSL(EMAIL_HOST)
-            mail.login(EMAIL_USER, EMAIL_PASS)
-            mail.select("INBOX") # O la carpeta que uses, ej: "INBOX/Bancos"
-        except Exception as e:
-            self.stdout.write(self.style.ERROR(f"Error de conexión: {e}"))
-            return
-
-        # 4. Buscar correos NO LEÍDOS (UNSEEN) de tu Banco
-        # Ajusta el criterio FROM según el remitente real de tu banco
-        # Ej: '(UNSEEN FROM "notificaciones@banco.cl")'
-        criteria = 'UNSEEN' 
-        typ, data = mail.search(None, criteria)
+        sources = EmailSource.objects.all()
+        self.stdout.write(f"Iniciando proceso para {sources.count()} fuentes...")
         
-        email_ids = data[0].split()
-        self.stdout.write(f"Se encontraron {len(email_ids)} correos nuevos.")
+        for source in sources:
+            self.process_source(source)
 
-        importer = BancoChileImporter()
-        count_saved = 0
+    def process_source(self, source):
+        self.stdout.write(f"🔌 Conectando a fuente: {source.name} ({source.email_user})")
+        
+        # Obtenemos reglas activas primero, si no hay, no vale la pena conectar
+        rules = source.rules.filter(is_active=True)
+        if not rules.exists():
+            self.stdout.write("   No hay reglas activas. Saltando.")
+            return
 
-        for e_id in email_ids:
-            # Fetch del cuerpo del correo
-            typ, msg_data = mail.fetch(e_id, '(RFC822)')
-            for response_part in msg_data:
-                if isinstance(response_part, tuple):
-                    msg = email.message_from_bytes(response_part[1])
-                    
-                    # Decodificar el asunto (para logs)
-                    subject, encoding = decode_header(msg["Subject"])[0]
-                    if isinstance(subject, bytes):
-                        subject = subject.decode(encoding if encoding else "utf-8")
-                    
-                    self.stdout.write(f"Procesando: {subject}")
+        try:
+            password = source.get_password()
+            mail = imaplib.IMAP4_SSL(source.email_host, source.email_port)
+            mail.login(source.email_user, password)
+            mail.select("INBOX")
+            
+            self.stdout.write(f"   Conexión exitosa. Procesando {rules.count()} reglas.")
 
-                    # Extraer cuerpo (Texto o HTML)
-                    body = ""
-                    if msg.is_multipart():
-                        for part in msg.walk():
-                            content_type = part.get_content_type()
-                            content_disposition = str(part.get("Content-Disposition"))
-                            try:
-                                # Preferimos HTML si hay, si no texto plano
-                                if "attachment" not in content_disposition:
-                                    if content_type == "text/html":
-                                        body = part.get_payload(decode=True).decode()
-                                        break # Encontré HTML, me quedo con este
-                                    elif content_type == "text/plain":
-                                        body = part.get_payload(decode=True).decode()
-                            except:
-                                pass
-                    else:
-                        body = msg.get_payload(decode=True).decode()
+            for rule in rules:
+                self.process_rule(mail, rule)
+                
+            mail.close()
+            mail.logout()
+            
+            source.status_message = f"OK - Última ejecución: {timezone.now().strftime('%Y-%m-%d %H:%M')}"
+            source.last_connection_check = timezone.now()
+            source.save()
 
-                    # --- USAR EL IMPORTER ---
-                    dtos = importer.parse(body, subject=subject)
+        except Exception as e:
+            msg = f"Error conexión {source.name}: {e}"
+            self.stdout.write(self.style.ERROR(msg))
+            source.status_message = str(e)
+            source.save()
 
-                    if dtos:
-                        for dto in dtos:
-                            if dry_run:
-                                self.stdout.write(self.style.WARNING(f"[DRY RUN] Se guardaría: {dto.payee} | {dto.amount}"))
+    def process_rule(self, mail, rule):
+        self.stdout.write(f"   Regla: {rule.parser_type} -> {rule.account.name}")
+        
+        try:
+            # 1. Construir Criterio de Búsqueda IMAP
+            # Empezamos con el criterio base (ej: UNSEEN)
+            search_terms = [rule.search_criteria]
+            
+            # Si hay filtro de destinatario, agregamos la cláusula TO
+            # Importante: Las comillas escapadas son vitales para direcciones con puntos
+            if rule.filter_recipient_email:
+                search_terms.append(f'TO "{rule.filter_recipient_email}"')
+            
+            # Unimos los términos. IMAP requiere paréntesis si hay múltiples condiciones
+            # Ej: '(UNSEEN TO "tomas@gmail.com")'
+            if len(search_terms) > 1:
+                final_criteria = f"({' '.join(search_terms)})"
+            else:
+                final_criteria = search_terms[0]
+            
+            # 2. Ejecutar búsqueda
+            typ, data = mail.search(None, final_criteria)
+            email_ids = data[0].split()
+            
+            self.stdout.write(f"     Encontrados: {len(email_ids)} correos.")
+
+            if len(email_ids) == 0:
+                rule.last_sync = timezone.now()
+                rule.save()
+                return
+
+            # 3. Seleccionar Parser
+            importer = None
+            if rule.parser_type == 'BANCO_CHILE':
+                importer = BancoChileImporter()
+            else:
+                self.stdout.write(self.style.WARNING(f"     Parser {rule.parser_type} no implementado."))
+                return
+
+            count_saved = 0
+            
+            # 4. Procesar correos encontrados
+            for e_id in email_ids:
+                try:
+                    typ, msg_data = mail.fetch(e_id, '(RFC822)')
+                    for response_part in msg_data:
+                        if isinstance(response_part, tuple):
+                            msg = email.message_from_bytes(response_part[1])
+                            
+                            # Decodificar Subject
+                            subject, encoding = decode_header(msg["Subject"])[0]
+                            if isinstance(subject, bytes):
+                                subject = subject.decode(encoding if encoding else "utf-8")
+                            
+                            # Extraer Body
+                            body = ""
+                            if msg.is_multipart():
+                                for part in msg.walk():
+                                    if part.get_content_type() == "text/html":
+                                        try:
+                                            body = part.get_payload(decode=True).decode()
+                                            break
+                                        except: pass
                             else:
-                                tx, created = create_transaction_from_dto(account, dto)
-                                
-                                if created:
-                                    self.stdout.write(self.style.SUCCESS(f"  -> Guardado: {tx.raw_payee} (Payee: {tx.payee})"))
-                                    count_saved += 1
-                                else:
-                                    self.stdout.write(f"  -> Duplicado: {dto.payee}")
-                    else:
-                        self.stdout.write("  -> No se extrajeron datos (posiblemente formato desconocido)")
+                                try:
+                                    body = msg.get_payload(decode=True).decode()
+                                except: pass
 
-        mail.close()
-        mail.logout()
-        self.stdout.write(self.style.SUCCESS(f"Proceso finalizado. {count_saved} transacciones importadas."))
+                            # Parsear
+                            dtos = importer.parse(body, subject=subject)
+
+                            # Guardar Transacciones
+                            if dtos:
+                                for dto in dtos:
+                                    tx, created = create_transaction_from_dto(rule.account, dto)
+                                    if created:
+                                        self.stdout.write(self.style.SUCCESS(f"       + {tx.raw_payee} | ${tx.amount}"))
+                                        count_saved += 1
+                                    else:
+                                        self.stdout.write(f"       . Duplicado")
+                            
+                except Exception as e:
+                    self.stdout.write(self.style.ERROR(f"     Error leyendo email ID {e_id}: {e}"))
+
+            # 5. Actualizar timestamp de la regla
+            rule.last_sync = timezone.now()
+            rule.save()
+            
+        except Exception as e:
+            self.stdout.write(self.style.ERROR(f"     Error en regla {rule.id}: {e}"))
