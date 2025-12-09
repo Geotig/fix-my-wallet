@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework import viewsets, views
 from datetime import datetime, date
 from decimal import Decimal
+from collections import defaultdict
 
 # Importamos todos los modelos necesarios, incluyendo CategoryGroup
 from .models import Transaction, Account, Category, CategoryGroup, BudgetAssignment, Payee, EmailSource, EmailRule
@@ -98,6 +99,67 @@ class TransactionViewSet(viewsets.ModelViewSet):
             tx.save()
             partner.save()
         return Response({"status": "Vínculo roto"})
+    
+    @action(detail=False, methods=['post'])
+    def create_transfer(self, request):
+        """
+        Crea una transferencia completa (Salida + Entrada + Vínculo) en un paso.
+        Payload: { 
+            "source_account": 1, 
+            "destination_account": 2, 
+            "amount": 5000, 
+            "date": "2025-12-09",
+            "memo": "Pago tarjeta"
+        }
+        """
+        source_id = request.data.get('source_account')
+        dest_id = request.data.get('destination_account')
+        amount = request.data.get('amount')
+        date_str = request.data.get('date')
+        memo = request.data.get('memo', '')
+
+        if not all([source_id, dest_id, amount, date_str]):
+            return Response({"error": "Faltan datos obligatorios"}, status=400)
+
+        if source_id == dest_id:
+            return Response({"error": "La cuenta de origen y destino deben ser distintas"}, status=400)
+
+        try:
+            with transaction.atomic():
+                amount_val = abs(Decimal(str(amount))) # Aseguramos positivo para la lógica interna
+
+                # 1. Crear Salida (Gasto)
+                tx_out = Transaction.objects.create(
+                    account_id=source_id,
+                    amount=-amount_val, # Negativo
+                    date=date_str,
+                    memo=memo,
+                    raw_payee="Transferencia Saliente",
+                    payee=None,
+                    category=None
+                )
+
+                # 2. Crear Entrada (Ingreso)
+                tx_in = Transaction.objects.create(
+                    account_id=dest_id,
+                    amount=amount_val, # Positivo
+                    date=date_str,
+                    memo=memo,
+                    raw_payee="Transferencia Entrante",
+                    payee=None,
+                    category=None
+                )
+
+                # 3. Vincular
+                tx_out.transfer_transaction = tx_in
+                tx_in.transfer_transaction = tx_out
+                tx_out.save()
+                tx_in.save()
+
+            return Response({"status": "Transferencia creada", "ids": [tx_out.id, tx_in.id]})
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=400)
 
 class BudgetSummaryView(views.APIView):
     def get(self, request):
@@ -121,19 +183,47 @@ class BudgetSummaryView(views.APIView):
             balance = acc.transactions.aggregate(Sum('amount'))['amount__sum'] or 0
             total_cash += balance
 
-        # 2. RTA: Calcular Total Asignado este mes (Desde la base de datos)
+        # 2. RTA: Calcular Total Asignado este mes
         total_assigned_month = BudgetAssignment.objects.filter(
             month=target_month
         ).aggregate(Sum('amount'))['amount__sum'] or 0
 
         ready_to_assign = total_cash - total_assigned_month
 
-        # --- AQUÍ ESTABA EL ERROR: Inicialización de variables globales ---
+        # --- LÓGICA TC 1: Gasto con Tarjeta (Aumenta el sobre de pago) ---
+        cc_spending_summary = Transaction.objects.filter(
+            date__year=target_month.year,
+            date__month=target_month.month,
+            account__account_type=Account.Type.CREDIT_CARD,
+            transfer_transaction__isnull=True, # No es transferencia, es compra
+            category__isnull=False
+        ).values('account').annotate(total_spent=Sum('amount'))
+
+        cc_movement_map = { 
+            entry['account']: abs(entry['total_spent']) 
+            for entry in cc_spending_summary 
+        }
+
+        # --- LÓGICA TC 2: Pagos a la Tarjeta (Disminuye el sobre de pago) ---
+        # Buscamos transferencias ENTRANTES (positivas) a cuentas de CRÉDITO
+        cc_payments_summary = Transaction.objects.filter(
+            date__year=target_month.year,
+            date__month=target_month.month,
+            account__account_type=Account.Type.CREDIT_CARD,
+            transfer_transaction__isnull=False, # SÍ es transferencia (pago)
+            amount__gt=0 # Es un abono (pago de la deuda)
+        ).values('account').annotate(total_paid=Sum('amount'))
+
+        cc_payment_map = {
+            entry['account']: entry['total_paid']
+            for entry in cc_payments_summary
+        }
+
+        # --- BUCLE PRINCIPAL ---
         total_assigned_global = 0
         total_activity_global = 0
         total_available_global = 0
         
-        # 3. Datos Agrupados
         groups = CategoryGroup.objects.filter(is_active=True).order_by('order', 'name')
         grouped_data = []
 
@@ -142,9 +232,11 @@ class BudgetSummaryView(views.APIView):
             cats = group.categories.filter(is_active=True).order_by('order', 'name')
             
             for cat in cats:
+                # A. Asignado
                 assignment = BudgetAssignment.objects.filter(category=cat, month=target_month).first()
                 assigned_amount = assignment.amount if assignment else 0
 
+                # B. Actividad (Gasto real de efectivo o débito)
                 activity_result = Transaction.objects.filter(
                     category=cat,
                     date__year=target_month.year,
@@ -153,9 +245,29 @@ class BudgetSummaryView(views.APIView):
                 ).aggregate(total=Sum('amount'))
                 
                 activity_amount = activity_result['total'] or 0
+                
+                # C. Disponible Base
                 available_amount = assigned_amount + activity_amount
 
-                # Acumulamos en los globales para el footer
+                # D. Lógica TC Combinada
+                if hasattr(cat, 'credit_account'): 
+                    card_id = cat.credit_account.id
+                    
+                    # 1. Sumamos lo que gastamos con la tarjeta (movemos del sobre original a este)
+                    funded_from_spending = cc_movement_map.get(card_id, 0)
+                    available_amount += funded_from_spending
+                    
+                    # 2. Restamos lo que ya pagamos al banco (el dinero salió de la caja)
+                    # Nota: En la vista de presupuesto, la columna "Actividad" para la categoría de pago
+                    # suele mostrarse como el monto pagado negativo.
+                    paid_amount = cc_payment_map.get(card_id, 0)
+                    available_amount -= paid_amount
+                    
+                    # Ajuste visual: Para las categorías de pago de TC, la "Actividad" 
+                    # debería reflejar los pagos realizados, para que el usuario entienda por qué bajó.
+                    activity_amount -= paid_amount
+
+                # E. Globales
                 total_assigned_global += assigned_amount
                 total_activity_global += activity_amount
                 total_available_global += available_amount
@@ -168,15 +280,11 @@ class BudgetSummaryView(views.APIView):
                     "available": available_amount
                 })
             
-            # Solo añadimos el grupo si tiene categorías (opcional, aquí lo añadimos siempre)
             grouped_data.append({
                 "group_id": group.id,
                 "group_name": group.name,
                 "categories": group_categories
             })
-
-        # Si hay categorías "huérfanas" (sin grupo), podríamos manejarlas aquí,
-        # pero por ahora asumimos que todas tienen grupo gracias al Admin.
 
         return Response({
             "month": target_month.strftime('%Y-%m-%d'),

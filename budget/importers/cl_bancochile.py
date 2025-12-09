@@ -15,9 +15,11 @@ class BancoChileImporter(BaseImporter):
         soup = BeautifulSoup(raw_content, "html.parser")
         
         # Limpieza básica del asunto
-        clean_subject = re.sub(r'^([\[\(] *)?(RE?|FWD?) *([-:)] *)?', '', subject, flags=re.IGNORECASE | re.MULTILINE).strip()
-        
+        clean_subject = re.sub(r'^\s*([\[\(] *)?(RE?|FWD?|RV|REENV?) *([-:)] *)?', '', subject, flags=re.IGNORECASE).strip()
+        clean_subject = clean_subject.strip('"\'')
+
         lower_subject = clean_subject.lower()
+        logger.info(f"Parsing Subject: '{subject}' -> Cleaned: '{clean_subject}'")
 
         # --- Despachador de Lógica ---
         if "aviso de transferencia de fondos" in lower_subject:

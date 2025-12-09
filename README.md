@@ -29,7 +29,7 @@
 
 # FixMyWallet 💸
 
-Una aplicación de finanzas personales *self-hosted* enfocada en la metodología de presupuesto de sobres (Envelope Budgeting), automatización vía correos bancarios y gestión colaborativa.
+Una aplicación de finanzas personales *self-hosted* enfocada en la metodología de presupuesto de sobres (Envelope Budgeting), automatización vía correos bancarios y gestión colaborativa. "Tener la menor fricción posible para tomar decisiones rápidas al gastar tu dinero".
 
 ## 🚀 Características
 

@@ -16,6 +16,7 @@ const TransactionForm = ({ onSuccess, onCancel }) => {
     date: new Date().toISOString().split('T')[0], // Fecha de hoy YYYY-MM-DD
     payee_text: '',
     account: '',
+    destination_account: '',
     category: '',
     amount: '',
     memo: '',
@@ -58,35 +59,53 @@ const TransactionForm = ({ onSuccess, onCancel }) => {
     setLoading(true);
 
     try {
-      // 1. Lógica del Payee: ¿Existe o es nuevo?
-      const existingPayee = payees.find(p => p.name.toLowerCase() === formData.payee_text.toLowerCase());
+      // --- LÓGICA TRANSFERENCIA ---
+      if (formData.type === 'transfer') {
+        const payload = {
+            source_account: formData.account,
+            destination_account: formData.destination_account,
+            amount: formData.amount,
+            date: formData.date,
+            memo: formData.memo
+        };
+
+        const res = await apiFetch('/api/transactions/create_transfer/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.error || "Error creando transferencia");
+        }
+
+      } else {
+        // --- LÓGICA GASTO/INGRESO (Existente) ---
+        const existingPayee = payees.find(p => p.name.toLowerCase() === formData.payee_text.toLowerCase());
+        const absAmount = Math.abs(parseFloat(formData.amount));
+        const finalAmount = formData.type === 'expense' ? -absAmount : absAmount;
+
+        const payload = {
+            date: formData.date,
+            amount: finalAmount,
+            account: formData.account,
+            category: formData.category || null,
+            memo: formData.memo,
+            payee: existingPayee ? existingPayee.id : null,
+            payee_name: existingPayee ? null : formData.payee_text
+        };
+
+        const res = await apiFetch('/api/transactions/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) throw new Error("Error al guardar");
+      }
       
-      // 2. Lógica del Monto: Gasto (-) vs Ingreso (+)
-      const absAmount = Math.abs(parseFloat(formData.amount));
-      const finalAmount = formData.type === 'expense' ? -absAmount : absAmount;
-
-      // 3. Construir Payload
-      const payload = {
-        date: formData.date,
-        amount: finalAmount,
-        account: formData.account,
-        category: formData.category || null,
-        memo: formData.memo,
-        // Si existe el payee, mandamos su ID. Si no, mandamos el texto como payee_name
-        payee: existingPayee ? existingPayee.id : null,
-        payee_name: existingPayee ? null : formData.payee_text
-      };
-
-      // 4. Enviar
-      const res = await apiFetch('/api/transactions/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      if (!res.ok) throw new Error("Error al guardar");
-      
-      onSuccess(); // Cerrar modal y refrescar
+      onSuccess(); 
 
     } catch (error) {
       alert("Error: " + error.message);
@@ -102,26 +121,22 @@ const TransactionForm = ({ onSuccess, onCancel }) => {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       
-      {/* Botones de Tipo (Gasto / Ingreso) */}
-      <div className="flex gap-2 justify-center mb-4">
-        <button
-            type="button"
-            onClick={() => handleChange('type', 'expense')}
-            className={`px-4 py-2 rounded-full text-sm font-bold transition-colors ${
-                formData.type === 'expense' ? 'bg-red-100 text-red-700 ring-2 ring-red-500' : 'bg-gray-100 text-gray-500'
-            }`}
-        >
-            Gasto
-        </button>
-        <button
-            type="button"
-            onClick={() => handleChange('type', 'income')}
-            className={`px-4 py-2 rounded-full text-sm font-bold transition-colors ${
-                formData.type === 'income' ? 'bg-green-100 text-green-700 ring-2 ring-green-500' : 'bg-gray-100 text-gray-500'
-            }`}
-        >
-            Ingreso
-        </button>
+      {/* TABS DE TIPO */}
+      <div className="flex bg-gray-100 p-1 rounded-lg">
+        {['expense', 'income', 'transfer'].map(type => (
+            <button
+                key={type}
+                type="button"
+                onClick={() => handleChange('type', type)}
+                className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${
+                    formData.type === type 
+                    ? 'bg-white text-blue-600 shadow-sm' 
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+            >
+                {type === 'expense' ? 'Gasto' : type === 'income' ? 'Ingreso' : 'Transferencia'}
+            </button>
+        ))}
       </div>
 
       <div className="grid grid-cols-2 gap-4">
@@ -143,36 +158,67 @@ const TransactionForm = ({ onSuccess, onCancel }) => {
         />
       </div>
 
-      <Combobox 
-        id="payee"
-        label="Payee (Comercio)"
-        placeholder="Ej: Lider, Uber, Kiosco..."
-        options={payees}
-        value={formData.payee_text}
-        onChange={e => handleChange('payee_text', e.target.value)}
-        required
-      />
+      {/* CAMPOS DINÁMICOS SEGÚN TIPO */}
+      
+      {formData.type === 'transfer' ? (
+        // --- CAMPOS TRANSFERENCIA ---
+        <div className="grid grid-cols-2 gap-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
+            <Select 
+                label="Desde (Origen)"
+                required
+                value={formData.account}
+                onChange={e => handleChange('account', e.target.value)}
+            >
+                {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name}</option>)}
+            </Select>
 
-      <div className="grid grid-cols-2 gap-4">
-        <Select 
-            label="Cuenta"
-            required
-            value={formData.account}
-            onChange={e => handleChange('account', e.target.value)}
-        >
-            <option value="">Seleccionar...</option>
-            {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name}</option>)}
-        </Select>
+            <Select 
+                label="Hacia (Destino)"
+                required
+                value={formData.destination_account}
+                onChange={e => handleChange('destination_account', e.target.value)}
+            >
+                <option value="">Seleccionar...</option>
+                {accounts
+                    .filter(a => a.id !== parseInt(formData.account)) // Excluir cuenta origen
+                    .map(acc => <option key={acc.id} value={acc.id}>{acc.name}</option>)
+                }
+            </Select>
+        </div>
+      ) : (
+        // --- CAMPOS NORMALES ---
+        <>
+            <Combobox 
+                id="payee"
+                label="Payee (Comercio)"
+                placeholder="Ej: Lider..."
+                options={payees}
+                value={formData.payee_text}
+                onChange={e => handleChange('payee_text', e.target.value)}
+                required
+            />
 
-        <Select 
-            label="Categoría"
-            value={formData.category}
-            onChange={e => handleChange('category', e.target.value)}
-        >
-            <option value="">-- Sin Asignar --</option>
-            {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
-        </Select>
-      </div>
+            <div className="grid grid-cols-2 gap-4">
+                <Select 
+                    label="Cuenta"
+                    required
+                    value={formData.account}
+                    onChange={e => handleChange('account', e.target.value)}
+                >
+                    {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name}</option>)}
+                </Select>
+
+                <Select 
+                    label="Categoría"
+                    value={formData.category}
+                    onChange={e => handleChange('category', e.target.value)}
+                >
+                    <option value="">-- Sin Asignar --</option>
+                    {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+                </Select>
+            </div>
+        </>
+      )}
 
       <Input 
         label="Memo (Opcional)" 
@@ -184,7 +230,7 @@ const TransactionForm = ({ onSuccess, onCancel }) => {
       <div className="flex justify-end gap-2 pt-4 border-t border-gray-100 mt-4">
         <Button type="button" variant="ghost" onClick={onCancel}>Cancelar</Button>
         <Button type="submit" disabled={loading}>
-            {loading ? 'Guardando...' : 'Crear Transacción'}
+            {loading ? 'Guardando...' : 'Crear'}
         </Button>
       </div>
     </form>

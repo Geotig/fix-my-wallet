@@ -18,7 +18,15 @@ class Account(models.Model):
     account_type = models.CharField(max_length=10, choices=Type.choices, default=Type.CHECKING)
     balance = models.DecimalField(max_digits=12, decimal_places=0, default=0) # CLP no usa decimales, pero es bueno dejarlos por si acaso
     identifier = models.CharField(max_length=50, blank=True, null=True, help_text="Identificador único en los correos (ej: últimos 4 dígitos de la tarjeta)")
-
+    payment_category = models.OneToOneField(
+        'Category',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='credit_account',
+        help_text="Categoría interna para gestionar el pago de esta tarjeta"
+    )
+    
     def __str__(self):
         id_str = f" [...{self.identifier}]" if self.identifier else ""
         return f"{self.name}{id_str} ({self.get_account_type_display()})"
