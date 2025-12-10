@@ -38,4 +38,3 @@ frontend/.env.local
 # --- Archivos de pruebas locales ---
 samples/
 examples/
-*.txt
