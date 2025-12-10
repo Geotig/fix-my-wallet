@@ -1,10 +1,11 @@
 from django.db.models import Sum
 from django.db import transaction
 from django.core.management import call_command
+from django.db.models import Sum, Q
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import viewsets, views
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from decimal import Decimal
 from collections import defaultdict
 
@@ -167,62 +168,68 @@ class BudgetSummaryView(views.APIView):
         if month_param:
             try:
                 target_date = datetime.strptime(month_param, '%Y-%m-%d').date()
-                target_month = target_date.replace(day=1)
+                # Primer día del mes
+                target_month_start = target_date.replace(day=1)
+                # Para calcular el acumulado, necesitamos hasta el último momento del mes
+                # (o simplemente usamos la fecha actual si es el mes presente, 
+                # pero para meses pasados necesitamos incluir todo).
+                # Simplificación: Filtraremos por mes <= target_month_start para asignaciones
+                # y date < target_month_start + 1 mes para transacciones.
             except ValueError:
                 return Response({"error": "Formato de fecha inválido"}, status=400)
         else:
             today = date.today()
-            target_month = today.replace(day=1)
+            target_month_start = today.replace(day=1)
 
-        # 1. RTA: Calcular Saldo Total de Cuentas Líquidas
-        liquid_accounts = Account.objects.filter(
-            account_type__in=['CHECKING', 'SAVINGS', 'CASH']
-        )
+        # Helper para el último día del mes (aprox)
+        next_month = (target_month_start.replace(day=28) + timedelta(days=4)).replace(day=1)
+        
+        # --- 1. RTA ACUMULATIVO ---
+        # El dinero disponible para asignar es:
+        # (Saldo Total Cuentas Líquidas HOY) - (Suma de TODAS las asignaciones hasta el futuro)
+        # Nota: YNAB usa "Funds for [Month]" vs "Total Available". 
+        # Para simplificar v1: RTA es el dinero en caja que no ha sido asignado a ningún sobre nunca.
+        
+        liquid_accounts = Account.objects.filter(account_type__in=['CHECKING', 'SAVINGS', 'CASH'])
         total_cash = 0
         for acc in liquid_accounts:
-            balance = acc.transactions.aggregate(Sum('amount'))['amount__sum'] or 0
-            total_cash += balance
+            total_cash += acc.transactions.aggregate(Sum('amount'))['amount__sum'] or 0
 
-        # 2. RTA: Calcular Total Asignado este mes
-        total_assigned_month = BudgetAssignment.objects.filter(
-            month=target_month
-        ).aggregate(Sum('amount'))['amount__sum'] or 0
+        # Sumamos TODAS las asignaciones de la historia (hasta el mes actual inclusive, o futuro)
+        # Si asignaste dinero en el futuro, ya no lo tienes disponible hoy.
+        total_assigned_all_time = BudgetAssignment.objects.aggregate(Sum('amount'))['amount__sum'] or 0
 
-        ready_to_assign = total_cash - total_assigned_month
+        ready_to_assign = total_cash - total_assigned_all_time
 
-        # --- LÓGICA TC 1: Gasto con Tarjeta (Aumenta el sobre de pago) ---
-        cc_spending_summary = Transaction.objects.filter(
-            date__year=target_month.year,
-            date__month=target_month.month,
+        # --- 2. PREPARACIÓN DATOS TARJETAS (ACUMULATIVO) ---
+        # Para el disponible, necesitamos saber cuánto se ha gastado con TC históricamente
+        # para moverlo al sobre de pago.
+        
+        # Gasto histórico con TC (Acumulado hasta fin de este mes)
+        cc_spending_all_time = Transaction.objects.filter(
+            date__lt=next_month, # Todo lo anterior al próximo mes
             account__account_type=Account.Type.CREDIT_CARD,
-            transfer_transaction__isnull=True, # No es transferencia, es compra
+            transfer_transaction__isnull=True,
             category__isnull=False
         ).values('account').annotate(total_spent=Sum('amount'))
+        
+        cc_spending_map = { e['account']: abs(e['total_spent']) for e in cc_spending_all_time }
 
-        cc_movement_map = { 
-            entry['account']: abs(entry['total_spent']) 
-            for entry in cc_spending_summary 
-        }
-
-        # --- LÓGICA TC 2: Pagos a la Tarjeta (Disminuye el sobre de pago) ---
-        # Buscamos transferencias ENTRANTES (positivas) a cuentas de CRÉDITO
-        cc_payments_summary = Transaction.objects.filter(
-            date__year=target_month.year,
-            date__month=target_month.month,
+        # Pagos históricos a TC
+        cc_payments_all_time = Transaction.objects.filter(
+            date__lt=next_month,
             account__account_type=Account.Type.CREDIT_CARD,
-            transfer_transaction__isnull=False, # SÍ es transferencia (pago)
-            amount__gt=0 # Es un abono (pago de la deuda)
+            transfer_transaction__isnull=False,
+            amount__gt=0
         ).values('account').annotate(total_paid=Sum('amount'))
+        
+        cc_payment_map = { e['account']: e['total_paid'] for e in cc_payments_all_time }
 
-        cc_payment_map = {
-            entry['account']: entry['total_paid']
-            for entry in cc_payments_summary
-        }
 
-        # --- BUCLE PRINCIPAL ---
-        total_assigned_global = 0
-        total_activity_global = 0
-        total_available_global = 0
+        # --- 3. BUCLE PRINCIPAL ---
+        total_assigned_month = 0 # Solo visual para el mes
+        total_activity_month = 0
+        total_available = 0
         
         groups = CategoryGroup.objects.filter(is_active=True).order_by('order', 'name')
         grouped_data = []
@@ -232,52 +239,77 @@ class BudgetSummaryView(views.APIView):
             cats = group.categories.filter(is_active=True).order_by('order', 'name')
             
             for cat in cats:
-                # A. Asignado
-                assignment = BudgetAssignment.objects.filter(category=cat, month=target_month).first()
-                assigned_amount = assignment.amount if assignment else 0
+                # A. Asignado ESTE MES (Para el input editable)
+                assignment_this_month = BudgetAssignment.objects.filter(
+                    category=cat, month=target_month_start
+                ).first()
+                val_assigned_this_month = assignment_this_month.amount if assignment_this_month else 0
 
-                # B. Actividad (Gasto real de efectivo o débito)
-                activity_result = Transaction.objects.filter(
+                # B. Asignado ACUMULADO (Desde el inicio hasta este mes)
+                val_assigned_cumulative = BudgetAssignment.objects.filter(
+                    category=cat, month__lte=target_month_start
+                ).aggregate(Sum('amount'))['amount__sum'] or 0
+
+                # C. Actividad ESTE MES (Solo visual)
+                activity_month_result = Transaction.objects.filter(
                     category=cat,
-                    date__year=target_month.year,
-                    date__month=target_month.month,
+                    date__year=target_month_start.year,
+                    date__month=target_month_start.month,
                     transfer_transaction__isnull=True 
                 ).aggregate(total=Sum('amount'))
-                
-                activity_amount = activity_result['total'] or 0
-                
-                # C. Disponible Base
-                available_amount = assigned_amount + activity_amount
+                val_activity_month = activity_month_result['total'] or 0
 
-                # D. Lógica TC Combinada
+                # D. Actividad ACUMULADA (Para el cálculo de disponible real)
+                activity_cumulative_result = Transaction.objects.filter(
+                    category=cat,
+                    date__lt=next_month, # Todo hasta el fin de este mes
+                    transfer_transaction__isnull=True 
+                ).aggregate(total=Sum('amount'))
+                val_activity_cumulative = activity_cumulative_result['total'] or 0
+
+                # E. CÁLCULO DISPONIBLE (Rollover implícito)
+                # Disponible = Todo lo asignado alguna vez + Todo lo gastado alguna vez
+                available_amount = val_assigned_cumulative + val_activity_cumulative
+
+                # F. Lógica TC (Acumulativa)
                 if hasattr(cat, 'credit_account'): 
                     card_id = cat.credit_account.id
+                    funded = cc_spending_map.get(card_id, 0)
+                    paid = cc_payment_map.get(card_id, 0)
                     
-                    # 1. Sumamos lo que gastamos con la tarjeta (movemos del sobre original a este)
-                    funded_from_spending = cc_movement_map.get(card_id, 0)
-                    available_amount += funded_from_spending
+                    # El sobre de pago contiene: Todo lo gastado con la tarjeta - Todo lo pagado al banco
+                    available_amount = funded - paid
                     
-                    # 2. Restamos lo que ya pagamos al banco (el dinero salió de la caja)
-                    # Nota: En la vista de presupuesto, la columna "Actividad" para la categoría de pago
-                    # suele mostrarse como el monto pagado negativo.
-                    paid_amount = cc_payment_map.get(card_id, 0)
-                    available_amount -= paid_amount
+                    # Visualmente, en "Actividad" mostramos los pagos del mes
+                    # (Esto requiere una query extra pequeña o lógica separada,
+                    # por simplicidad mantenemos val_activity_month como estaba, que será 0 para pagos
+                    # a menos que ajustemos la lógica de visualización).
                     
-                    # Ajuste visual: Para las categorías de pago de TC, la "Actividad" 
-                    # debería reflejar los pagos realizados, para que el usuario entienda por qué bajó.
-                    activity_amount -= paid_amount
+                    # Ajuste visual para actividad de pago TC este mes:
+                    # Mostrar pagos realizados este mes como actividad negativa
+                    monthly_payments = Transaction.objects.filter(
+                        category=None, # Los pagos no tienen categoría, pero los inferimos por la cuenta
+                        account__id=card_id,
+                        date__year=target_month_start.year,
+                        date__month=target_month_start.month,
+                        transfer_transaction__isnull=False,
+                        amount__gt=0
+                    ).aggregate(Sum('amount'))['amount__sum'] or 0
+                    
+                    if monthly_payments > 0:
+                        val_activity_month = -monthly_payments
 
-                # E. Globales
-                total_assigned_global += assigned_amount
-                total_activity_global += activity_amount
-                total_available_global += available_amount
+                # G. Sumar a globales
+                total_assigned_month += val_assigned_this_month
+                total_activity_month += val_activity_month
+                total_available += available_amount
 
                 group_categories.append({
                     "category_id": cat.id,
                     "category_name": cat.name,
-                    "assigned": assigned_amount,
-                    "activity": activity_amount,
-                    "available": available_amount
+                    "assigned": val_assigned_this_month, # Input edita solo este mes
+                    "activity": val_activity_month,      # Muestra gasto de este mes
+                    "available": available_amount        # Muestra acumulado histórico
                 })
             
             grouped_data.append({
@@ -287,13 +319,13 @@ class BudgetSummaryView(views.APIView):
             })
 
         return Response({
-            "month": target_month.strftime('%Y-%m-%d'),
+            "month": target_month_start.strftime('%Y-%m-%d'),
             "ready_to_assign": ready_to_assign,
             "groups": grouped_data,
             "totals": {
-                "assigned": total_assigned_global,
-                "activity": total_activity_global,
-                "available": total_available_global
+                "assigned": total_assigned_month,
+                "activity": total_activity_month,
+                "available": total_available
             }
         })
 
