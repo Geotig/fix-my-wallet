@@ -48,7 +48,9 @@ const Layout = ({ children, currentView, setView, accounts = [] }) => {
           <h1 className="text-xl font-extrabold text-blue-600 tracking-tight">FixMyWallet</h1>
         </div>
         
-        <nav className="flex-1 overflow-y-auto py-4">
+        {/* Agregamos 'flex flex-col' al nav para poder empujar items al fondo */}
+        <nav className="flex-1 overflow-y-auto py-4 flex flex-col">
+          
           {/* Menú Principal */}
           <div className="px-3 space-y-1 mb-8">
             <div onClick={() => setView('budget')} className={navItemClass('budget')}>
@@ -60,8 +62,8 @@ const Layout = ({ children, currentView, setView, accounts = [] }) => {
             <div onClick={() => setView('accounts')} className={navItemClass('accounts')}>
               Gestión de Cuentas
             </div>
-            <div onClick={() => setView('settings')} className={navItemClass('settings')}>
-              Configuración
+            <div className="block py-2 px-4 rounded text-sm font-medium text-gray-400 cursor-not-allowed">
+              Reportes
             </div>
           </div>
 
@@ -69,7 +71,7 @@ const Layout = ({ children, currentView, setView, accounts = [] }) => {
           {budgetAccounts.length > 0 && (
             <div className="mb-6">
               <div className="px-4 mb-2 flex justify-between items-end">
-                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Presupuesto</h3>
+                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Cuentas</h3>
                 <span className="text-xs font-bold text-gray-800">{formatCurrency(totalBudget)}</span>
               </div>
               {budgetAccounts.map(acc => <AccountListItem key={acc.id} account={acc} />)}
@@ -85,11 +87,20 @@ const Layout = ({ children, currentView, setView, accounts = [] }) => {
               {creditAccounts.map(acc => <AccountListItem key={acc.id} account={acc} />)}
             </div>
           )}
+
+          {/* --- ZONA INFERIOR --- */}
+          {/* mt-auto empuja esto al fondo del espacio disponible */}
+          <div className="mt-auto px-3 pt-6 border-t border-gray-50">
+            <div onClick={() => setView('settings')} className={navItemClass('settings')}>
+              ⚙️ Configuración
+            </div>
+          </div>
+
         </nav>
 
-        {/* Footer Sidebar (Opcional: User info) */}
-        <div className="p-4 border-t border-gray-100 text-xs text-gray-400 text-center">
-            v0.2.0-alpha
+        {/* Footer Sidebar */}
+        <div className="p-4 text-xs text-gray-400 text-center bg-gray-50">
+            v0.7.1-alpha
         </div>
       </aside>
 
