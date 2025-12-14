@@ -13,9 +13,15 @@ class Account(models.Model):
         SAVINGS = 'SAVINGS', _('Ahorro')
         CREDIT_CARD = 'CREDIT', _('Tarjeta de Crédito')
         CASH = 'CASH', _('Efectivo')
+        ASSET = 'ASSET', _('Activo (Inversión/Bien)')
+        LOAN = 'LOAN', _('Pasivo (Deuda/Préstamo)')
 
     name = models.CharField(max_length=100)
     account_type = models.CharField(max_length=10, choices=Type.choices, default=Type.CHECKING)
+    off_budget = models.BooleanField(
+        default=False, 
+        help_text="Si es True, el saldo no suma al presupuesto y las transferencias hacia aquí requieren categoría."
+    )
     balance = models.DecimalField(max_digits=12, decimal_places=0, default=0) # CLP no usa decimales, pero es bueno dejarlos por si acaso
     identifier = models.CharField(max_length=50, blank=True, null=True, help_text="Identificador único en los correos (ej: últimos 4 dígitos de la tarjeta)")
     payment_category = models.OneToOneField(

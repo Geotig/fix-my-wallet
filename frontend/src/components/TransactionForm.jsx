@@ -54,6 +54,12 @@ const TransactionForm = ({ onSuccess, onCancel }) => {
     loadData();
   }, []);
 
+  const isDestinationOffBudget = () => {
+    if (formData.type !== 'transfer' || !formData.destination_account) return false;
+    const destAcc = accounts.find(a => a.id == formData.destination_account);
+    return destAcc ? destAcc.off_budget : false;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -66,7 +72,8 @@ const TransactionForm = ({ onSuccess, onCancel }) => {
             destination_account: formData.destination_account,
             amount: formData.amount,
             date: formData.date,
-            memo: formData.memo
+            memo: formData.memo,
+            category: formData.category
         };
 
         const res = await apiFetch('/api/transactions/create_transfer/', {
@@ -161,29 +168,48 @@ const TransactionForm = ({ onSuccess, onCancel }) => {
       {/* CAMPOS DINÁMICOS SEGÚN TIPO */}
       
       {formData.type === 'transfer' ? (
-        // --- CAMPOS TRANSFERENCIA ---
-        <div className="grid grid-cols-2 gap-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
-            <Select 
-                label="Desde (Origen)"
-                required
-                value={formData.account}
-                onChange={e => handleChange('account', e.target.value)}
-            >
-                {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name}</option>)}
-            </Select>
+        <div className="space-y-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
+            <div className="grid grid-cols-2 gap-4">
+                <Select 
+                    label="Desde (Origen)"
+                    required
+                    value={formData.account}
+                    onChange={e => handleChange('account', e.target.value)}
+                >
+                    {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name}</option>)}
+                </Select>
 
-            <Select 
-                label="Hacia (Destino)"
-                required
-                value={formData.destination_account}
-                onChange={e => handleChange('destination_account', e.target.value)}
-            >
-                <option value="">Seleccionar...</option>
-                {accounts
-                    .filter(a => a.id !== parseInt(formData.account)) // Excluir cuenta origen
-                    .map(acc => <option key={acc.id} value={acc.id}>{acc.name}</option>)
-                }
-            </Select>
+                <Select 
+                    label="Hacia (Destino)"
+                    required
+                    value={formData.destination_account}
+                    onChange={e => handleChange('destination_account', e.target.value)}
+                >
+                    <option value="">Seleccionar...</option>
+                    {accounts
+                        .filter(a => a.id !== parseInt(formData.account))
+                        .map(acc => <option key={acc.id} value={acc.id}>{acc.name}</option>)
+                    }
+                </Select>
+            </div>
+
+            {/* MOSTRAR SOLO SI EL DESTINO ES OFF-BUDGET */}
+            {isDestinationOffBudget() && (
+                <div className="animate-fade-in">
+                    <Select 
+                        label="Categoría (Requerido para Tracking)"
+                        value={formData.category}
+                        onChange={e => handleChange('category', e.target.value)}
+                        className="bg-white border-blue-300"
+                    >
+                        <option value="">Seleccionar Categoría...</option>
+                        {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+                    </Select>
+                    <p className="text-xs text-blue-600 mt-1">
+                        Al transferir a una cuenta de seguimiento, el dinero sale de tu presupuesto, por lo que requiere categoría.
+                    </p>
+                </div>
+            )}
         </div>
       ) : (
         // --- CAMPOS NORMALES ---

@@ -124,8 +124,7 @@ class AccountSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Account
-        # Agregamos 'identifier' a la lista
-        fields = ['id', 'name', 'account_type', 'current_balance', 'identifier'] 
+        fields = ['id', 'name', 'account_type', 'current_balance', 'identifier', 'off_budget']
 
     def get_current_balance(self, obj):
         total = obj.transactions.aggregate(Sum('amount'))['amount__sum']

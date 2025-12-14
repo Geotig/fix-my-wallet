@@ -3,10 +3,9 @@ import { apiFetch } from '../api';
 import Button from './ui/Button';
 import Card from './ui/Card';
 import Input from './ui/Input';
-import Select from './ui/Select'; // <--- Usamos el componente del UI Kit
+import Select from './ui/Select';
 import Badge from './ui/Badge';
 
-// Recibimos la función del padre para actualizar el Sidebar
 const AccountsView = ({ onAccountsChange }) => {
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -14,8 +13,17 @@ const AccountsView = ({ onAccountsChange }) => {
   
   const [newAccountName, setNewAccountName] = useState('');
   const [newAccountType, setNewAccountType] = useState('CHECKING');
-  const [newAccountIdentifier, setNewAccountIdentifier] = useState('');
+  const [newAccountOffBudget, setNewAccountOffBudget] = useState(false); // <--- NUEVO ESTADO
   const [initialBalance, setInitialBalance] = useState('');
+
+  // Efecto para "sugerir" el estado de off-budget según el tipo
+  useEffect(() => {
+    if (['ASSET', 'LOAN'].includes(newAccountType)) {
+        setNewAccountOffBudget(true);
+    } else {
+        setNewAccountOffBudget(false);
+    }
+  }, [newAccountType]);
 
   const fetchAccounts = async () => {
     try {
@@ -45,9 +53,10 @@ const AccountsView = ({ onAccountsChange }) => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          name: newAccountName,
-          account_type: newAccountType,
-          identifier: newAccountIdentifier
+            name: newAccountName, 
+            account_type: newAccountType,
+            identifier: '', // Opcional, lo dejamos vacío por ahora o agregas el input
+            off_budget: newAccountOffBudget // <--- ENVIAMOS EL VALOR DEL CHECKBOX
         })
       });
       
@@ -65,11 +74,10 @@ const AccountsView = ({ onAccountsChange }) => {
       setShowCreate(false);
       setNewAccountName('');
       setInitialBalance('');
-      setNewAccountIdentifier('');
-
-      // Actualizamos la lista local
+      // Resetear defaults
+      setNewAccountType('CHECKING'); 
+      
       await fetchAccounts(); 
-      // Actualizamos la barra lateral (App.jsx)
       if (onAccountsChange) onAccountsChange();
 
     } catch (error) {
@@ -93,10 +101,8 @@ const AccountsView = ({ onAccountsChange }) => {
         });
         if (!res.ok) throw new Error('Error en API');
         
-        // Actualizamos local y global
         await fetchAccounts();
         if (onAccountsChange) onAccountsChange();
-
     } catch (error) {
         alert("Error al actualizar saldo");
     }
@@ -113,37 +119,46 @@ const AccountsView = ({ onAccountsChange }) => {
 
       {showCreate && (
         <Card className="p-4 bg-blue-50 border-blue-100 animate-fade-in">
-            <form onSubmit={handleCreateAccount} className="flex flex-wrap gap-4 items-end">
+            <form onSubmit={handleCreateAccount} className="flex flex-wrap gap-6 items-end">
                 <Input 
                     label="Nombre"
-                    placeholder="Ej: Banco Estado"
+                    placeholder="Ej: Inversiones Fintual"
                     required
-                    containerClassName="flex-1 min-w-[200px]" // Ajuste de ancho
+                    containerClassName="flex-1 min-w-[200px]"
                     value={newAccountName} 
                     onChange={e => setNewAccountName(e.target.value)}
                 />
                 
-                <Select 
-                    label="Tipo"
-                    containerClassName="w-48"
-                    value={newAccountType} 
-                    onChange={e => setNewAccountType(e.target.value)}
-                >
-                    <option value="CHECKING">Cuenta Corriente</option>
-                    <option value="CREDIT">Tarjeta Crédito</option>
-                    <option value="SAVINGS">Ahorro</option>
-                    <option value="CASH">Efectivo</option>
-                </Select>
+                <div className="flex flex-col gap-2">
+                    <Select 
+                        label="Tipo"
+                        containerClassName="w-48"
+                        value={newAccountType} 
+                        onChange={e => setNewAccountType(e.target.value)}
+                    >
+                        <optgroup label="Presupuesto (On-Budget)">
+                            <option value="CHECKING">Cuenta Corriente</option>
+                            <option value="CREDIT">Tarjeta Crédito</option>
+                            <option value="SAVINGS">Ahorro</option>
+                            <option value="CASH">Efectivo</option>
+                        </optgroup>
+                        <optgroup label="Seguimiento (Off-Budget)">
+                            <option value="ASSET">Activo / Inversión</option>
+                            <option value="LOAN">Préstamo / Deuda</option>
+                        </optgroup>
+                    </Select>
 
-                <Input 
-                    label="Identificador (4 dígitos)"
-                    placeholder="Ej: 6563"
-                    containerClassName="w-40"
-                    maxLength={10}
-                    value={newAccountIdentifier} 
-                    onChange={e => setNewAccountIdentifier(e.target.value)}
-                    helpText="Para detección automática"
-                />
+                    {/* CHECKBOX MANUAL */}
+                    <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                        <input 
+                            type="checkbox"
+                            checked={newAccountOffBudget}
+                            onChange={(e) => setNewAccountOffBudget(e.target.checked)}
+                            className="rounded text-blue-600 focus:ring-blue-500"
+                        />
+                        <span>Off-Budget (Seguimiento)</span>
+                    </label>
+                </div>
 
                 <Input 
                     label="Saldo Inicial"
@@ -154,7 +169,7 @@ const AccountsView = ({ onAccountsChange }) => {
                     onChange={e => setInitialBalance(e.target.value)}
                 />
 
-                <Button type="submit" variant="primary" className="bg-green-600 hover:bg-green-700">
+                <Button type="submit" variant="primary" className="bg-green-600 hover:bg-green-700 h-10 mb-0.5">
                     Guardar
                 </Button>
             </form>
@@ -169,18 +184,21 @@ const AccountsView = ({ onAccountsChange }) => {
         )}
 
         {accounts.map(acc => (
-            <Card key={acc.id} className="p-6 border-l-4 border-l-blue-500 flex justify-between items-center hover:shadow-md transition-shadow">
+            <Card key={acc.id} className={`p-6 border-l-4 flex justify-between items-center hover:shadow-md transition-shadow ${
+                acc.off_budget ? 'border-gray-400 bg-gray-50' : 'border-blue-500'
+            }`}>
                 <div>
                     <h3 className="font-bold text-lg text-gray-800">{acc.name}</h3>
-                    <Badge color="gray" className="uppercase tracking-wider text-[10px]">
-                        {acc.account_type}
-                    </Badge>
-                    {/* MOSTRAR IDENTIFICADOR SI EXISTE */}
-                        {acc.identifier && (
-                            <Badge color="blue" className="text-[10px]">
-                                ****{acc.identifier}
+                    <div className="flex gap-2 mt-1">
+                        <Badge color="gray" className="uppercase tracking-wider text-[10px]">
+                            {acc.account_type}
+                        </Badge>
+                        {acc.off_budget && (
+                            <Badge color="yellow" className="text-[10px]">
+                                TRACKING
                             </Badge>
                         )}
+                    </div>
                 </div>
                 <div className="text-right">
                     <div className={`text-xl font-bold ${acc.current_balance < 0 ? 'text-red-600' : 'text-green-600'}`}>

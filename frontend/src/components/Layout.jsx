@@ -23,11 +23,18 @@ const Layout = ({ children, currentView, setView, accounts = [] }) => {
   const formatCurrency = (amount) => new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(amount);
 
   // Filtrar cuentas por grupo
-  const budgetAccounts = accounts.filter(a => ['CHECKING', 'SAVINGS', 'CASH'].includes(a.account_type));
-  const creditAccounts = accounts.filter(a => ['CREDIT'].includes(a.account_type));
+  // 1. Presupuesto: On-Budget y que NO sean Crédito (Checking, Cash, Savings)
+  const budgetAccounts = accounts.filter(a => !a.off_budget && ['CHECKING', 'SAVINGS', 'CASH'].includes(a.account_type));
+  
+  // 2. Deuda Presupuestada: Tarjetas de Crédito On-Budget
+  const creditAccounts = accounts.filter(a => !a.off_budget && a.account_type === 'CREDIT');
+  
+  // 3. Seguimiento (Tracking): Cualquier cuenta Off-Budget (Activos o Pasivos)
+  const trackingAccounts = accounts.filter(a => a.off_budget);
 
-  // Calcular totales
+  // Calcular totales (El Net Worth sería la suma de todo)
   const totalBudget = budgetAccounts.reduce((acc, curr) => acc + parseFloat(curr.current_balance), 0);
+  const totalTracking = trackingAccounts.reduce((acc, curr) => acc + parseFloat(curr.current_balance), 0);
   
   // Renderizador de lista de cuentas pequeña
   const AccountListItem = ({ account }) => (
@@ -88,10 +95,21 @@ const Layout = ({ children, currentView, setView, accounts = [] }) => {
             </div>
           )}
 
+          {/* Sección: Tracking / Inversiones / Préstamos */}
+          {trackingAccounts.length > 0 && (
+            <div className="mb-6">
+              <div className="px-4 mb-2 flex justify-between items-end">
+                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Seguimiento</h3>
+                <span className="text-xs font-bold text-gray-500">{formatCurrency(totalTracking)}</span>
+              </div>
+              {trackingAccounts.map(acc => <AccountListItem key={acc.id} account={acc} />)}
+            </div>
+          )}
+
           {/* --- ZONA INFERIOR --- */}
           {/* mt-auto empuja esto al fondo del espacio disponible */}
           <div className="mt-auto px-3 pt-6 border-t border-gray-50 pb-4">
-            <div onClick={() => setView('settings')} className={navItemClass('settings')}>
+            <div onClick={() => setView('settings') } className={navItemClass('settings')} >
               ⚙️ Configuración
             </div>
           </div>

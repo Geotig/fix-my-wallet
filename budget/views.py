@@ -80,8 +80,23 @@ class TransactionViewSet(viewsets.ModelViewSet):
 
                 tx1.transfer_transaction = tx2
                 tx2.transfer_transaction = tx1
-                tx1.category = None
-                tx2.category = None
+                
+                # --- LÓGICA INTELIGENTE DE CATEGORÍAS ---
+                # Regla: Solo borramos la categoría si AMBAS cuentas son On-Budget.
+                # Si una es Off-Budget, esa transferencia es un gasto/ingreso real para el presupuesto.
+                
+                # Chequeamos si es una transferencia interna pura (ambas on-budget)
+                is_pure_internal = (not tx1.account.off_budget) and (not tx2.account.off_budget)
+
+                if is_pure_internal:
+                    tx1.category = None
+                    tx2.category = None
+                else:
+                    # Es una transferencia mixta (On -> Off). 
+                    # No forzamos borrar categoría. 
+                    # El usuario deberá asignarle una (ej: "Pago Hipoteca") en la interfaz.
+                    pass
+
                 tx1.save()
                 tx2.save()
 
@@ -105,21 +120,12 @@ class TransactionViewSet(viewsets.ModelViewSet):
     
     @action(detail=False, methods=['post'])
     def create_transfer(self, request):
-        """
-        Crea una transferencia completa (Salida + Entrada + Vínculo) en un paso.
-        Payload: { 
-            "source_account": 1, 
-            "destination_account": 2, 
-            "amount": 5000, 
-            "date": "2025-12-09",
-            "memo": "Pago tarjeta"
-        }
-        """
         source_id = request.data.get('source_account')
         dest_id = request.data.get('destination_account')
         amount = request.data.get('amount')
         date_str = request.data.get('date')
         memo = request.data.get('memo', '')
+        category_id = request.data.get('category') # <--- RECIBIR CATEGORÍA
 
         if not all([source_id, dest_id, amount, date_str]):
             return Response({"error": "Faltan datos obligatorios"}, status=400)
@@ -129,28 +135,38 @@ class TransactionViewSet(viewsets.ModelViewSet):
 
         try:
             with transaction.atomic():
-                amount_val = abs(Decimal(str(amount))) # Aseguramos positivo para la lógica interna
+                amount_val = abs(Decimal(str(amount)))
+                
+                # Obtener objetos cuenta para verificar tipos
+                source_acc = Account.objects.get(pk=source_id)
+                dest_acc = Account.objects.get(pk=dest_id)
+
+                # Lógica de Categoría:
+                # Solo asignamos categoría a la salida si el destino es Off-Budget
+                final_category_id = None
+                if dest_acc.off_budget and not source_acc.off_budget:
+                    final_category_id = category_id
 
                 # 1. Crear Salida (Gasto)
                 tx_out = Transaction.objects.create(
-                    account_id=source_id,
-                    amount=-amount_val, # Negativo
+                    account=source_acc,
+                    amount=-amount_val,
                     date=date_str,
                     memo=memo,
-                    raw_payee="Transferencia Saliente",
+                    raw_payee=f"Transferencia a {dest_acc.name}",
                     payee=None,
-                    category=None
+                    category_id=final_category_id # <--- ASIGNAR
                 )
 
                 # 2. Crear Entrada (Ingreso)
                 tx_in = Transaction.objects.create(
-                    account_id=dest_id,
-                    amount=amount_val, # Positivo
+                    account=dest_acc,
+                    amount=amount_val,
                     date=date_str,
                     memo=memo,
-                    raw_payee="Transferencia Entrante",
+                    raw_payee=f"Transferencia de {source_acc.name}",
                     payee=None,
-                    category=None
+                    category=None # La entrada en off-budget no suele llevar categoría
                 )
 
                 # 3. Vincular
@@ -170,46 +186,33 @@ class BudgetSummaryView(views.APIView):
         if month_param:
             try:
                 target_date = datetime.strptime(month_param, '%Y-%m-%d').date()
-                # Primer día del mes
                 target_month_start = target_date.replace(day=1)
-                # Para calcular el acumulado, necesitamos hasta el último momento del mes
-                # (o simplemente usamos la fecha actual si es el mes presente, 
-                # pero para meses pasados necesitamos incluir todo).
-                # Simplificación: Filtraremos por mes <= target_month_start para asignaciones
-                # y date < target_month_start + 1 mes para transacciones.
             except ValueError:
                 return Response({"error": "Formato de fecha inválido"}, status=400)
         else:
             today = date.today()
             target_month_start = today.replace(day=1)
 
-        # Helper para el último día del mes (aprox)
         next_month = (target_month_start.replace(day=28) + timedelta(days=4)).replace(day=1)
         
         # --- 1. RTA ACUMULATIVO ---
-        # El dinero disponible para asignar es:
-        # (Saldo Total Cuentas Líquidas HOY) - (Suma de TODAS las asignaciones hasta el futuro)
-        # Nota: YNAB usa "Funds for [Month]" vs "Total Available". 
-        # Para simplificar v1: RTA es el dinero en caja que no ha sido asignado a ningún sobre nunca.
+        # CAMBIO TRACKING: Solo sumamos cuentas que NO son off_budget
+        liquid_accounts = Account.objects.filter(
+            account_type__in=['CHECKING', 'SAVINGS', 'CASH'],
+            off_budget=False 
+        )
         
-        liquid_accounts = Account.objects.filter(account_type__in=['CHECKING', 'SAVINGS', 'CASH'])
         total_cash = 0
         for acc in liquid_accounts:
             total_cash += acc.transactions.aggregate(Sum('amount'))['amount__sum'] or 0
 
-        # Sumamos TODAS las asignaciones de la historia (hasta el mes actual inclusive, o futuro)
-        # Si asignaste dinero en el futuro, ya no lo tienes disponible hoy.
         total_assigned_all_time = BudgetAssignment.objects.aggregate(Sum('amount'))['amount__sum'] or 0
-
         ready_to_assign = total_cash - total_assigned_all_time
 
-        # --- 2. PREPARACIÓN DATOS TARJETAS (ACUMULATIVO) ---
-        # Para el disponible, necesitamos saber cuánto se ha gastado con TC históricamente
-        # para moverlo al sobre de pago.
-        
-        # Gasto histórico con TC (Acumulado hasta fin de este mes)
+        # --- 2. DATOS TARJETAS ---
+        # (Esta parte se mantiene igual, calculando gastos y pagos de TC)
         cc_spending_all_time = Transaction.objects.filter(
-            date__lt=next_month, # Todo lo anterior al próximo mes
+            date__lt=next_month,
             account__account_type=Account.Type.CREDIT_CARD,
             transfer_transaction__isnull=True,
             category__isnull=False
@@ -217,7 +220,6 @@ class BudgetSummaryView(views.APIView):
         
         cc_spending_map = { e['account']: abs(e['total_spent']) for e in cc_spending_all_time }
 
-        # Pagos históricos a TC
         cc_payments_all_time = Transaction.objects.filter(
             date__lt=next_month,
             account__account_type=Account.Type.CREDIT_CARD,
@@ -227,9 +229,8 @@ class BudgetSummaryView(views.APIView):
         
         cc_payment_map = { e['account']: e['total_paid'] for e in cc_payments_all_time }
 
-
         # --- 3. BUCLE PRINCIPAL ---
-        total_assigned_month = 0 # Solo visual para el mes
+        total_assigned_month = 0
         total_activity_month = 0
         total_available = 0
         
@@ -241,56 +242,54 @@ class BudgetSummaryView(views.APIView):
             cats = group.categories.filter(is_active=True).order_by('order', 'name')
             
             for cat in cats:
-                # A. Asignado ESTE MES (Para el input editable)
+                # A. Asignado
                 assignment_this_month = BudgetAssignment.objects.filter(
                     category=cat, month=target_month_start
                 ).first()
                 val_assigned_this_month = assignment_this_month.amount if assignment_this_month else 0
 
-                # B. Asignado ACUMULADO (Desde el inicio hasta este mes)
                 val_assigned_cumulative = BudgetAssignment.objects.filter(
                     category=cat, month__lte=target_month_start
                 ).aggregate(Sum('amount'))['amount__sum'] or 0
 
-                # C. Actividad ESTE MES (Solo visual)
+                # B. Actividad ESTE MES
+                # CAMBIO TRACKING: Usamos Q objects para incluir transferencias a Off-Budget
                 activity_month_result = Transaction.objects.filter(
                     category=cat,
                     date__year=target_month_start.year,
-                    date__month=target_month_start.month,
-                    transfer_transaction__isnull=True 
+                    date__month=target_month_start.month
+                ).filter(
+                    # Condición: O es gasto normal (sin transfer) O es transfer hacia Off-Budget
+                    Q(transfer_transaction__isnull=True) | 
+                    Q(transfer_transaction__account__off_budget=True)
                 ).aggregate(total=Sum('amount'))
+                
                 val_activity_month = activity_month_result['total'] or 0
 
-                # D. Actividad ACUMULADA (Para el cálculo de disponible real)
+                # C. Actividad ACUMULADA (Para Rollover)
+                # CAMBIO TRACKING: Mismo filtro Q aquí
                 activity_cumulative_result = Transaction.objects.filter(
                     category=cat,
-                    date__lt=next_month, # Todo hasta el fin de este mes
-                    transfer_transaction__isnull=True 
+                    date__lt=next_month
+                ).filter(
+                    Q(transfer_transaction__isnull=True) | 
+                    Q(transfer_transaction__account__off_budget=True)
                 ).aggregate(total=Sum('amount'))
+                
                 val_activity_cumulative = activity_cumulative_result['total'] or 0
 
-                # E. CÁLCULO DISPONIBLE (Rollover implícito)
-                # Disponible = Todo lo asignado alguna vez + Todo lo gastado alguna vez
+                # D. Cálculo Disponible
                 available_amount = val_assigned_cumulative + val_activity_cumulative
 
-                # F. Lógica TC (Acumulativa)
+                # E. Lógica TC
                 if hasattr(cat, 'credit_account'): 
                     card_id = cat.credit_account.id
                     funded = cc_spending_map.get(card_id, 0)
                     paid = cc_payment_map.get(card_id, 0)
-                    
-                    # El sobre de pago contiene: Todo lo gastado con la tarjeta - Todo lo pagado al banco
                     available_amount = funded - paid
                     
-                    # Visualmente, en "Actividad" mostramos los pagos del mes
-                    # (Esto requiere una query extra pequeña o lógica separada,
-                    # por simplicidad mantenemos val_activity_month como estaba, que será 0 para pagos
-                    # a menos que ajustemos la lógica de visualización).
-                    
-                    # Ajuste visual para actividad de pago TC este mes:
-                    # Mostrar pagos realizados este mes como actividad negativa
                     monthly_payments = Transaction.objects.filter(
-                        category=None, # Los pagos no tienen categoría, pero los inferimos por la cuenta
+                        category=None,
                         account__id=card_id,
                         date__year=target_month_start.year,
                         date__month=target_month_start.month,
@@ -301,7 +300,7 @@ class BudgetSummaryView(views.APIView):
                     if monthly_payments > 0:
                         val_activity_month = -monthly_payments
 
-                # G. Sumar a globales
+                # Globales
                 total_assigned_month += val_assigned_this_month
                 total_activity_month += val_activity_month
                 total_available += available_amount
@@ -309,9 +308,9 @@ class BudgetSummaryView(views.APIView):
                 group_categories.append({
                     "category_id": cat.id,
                     "category_name": cat.name,
-                    "assigned": val_assigned_this_month, # Input edita solo este mes
-                    "activity": val_activity_month,      # Muestra gasto de este mes
-                    "available": available_amount        # Muestra acumulado histórico
+                    "assigned": val_assigned_this_month,
+                    "activity": val_activity_month,
+                    "available": available_amount
                 })
             
             grouped_data.append({

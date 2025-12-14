@@ -94,9 +94,19 @@ const TransactionList = ({ transactions, categories, onTransactionUpdate, onLink
                         // Caso 1: Es Transferencia
                         if (tx.is_transfer) {
                             return (
-                                <Badge color="blue" className="flex items-center gap-1 w-fit">
-                                    <span>↔</span> {tx.transfer_account_name || 'Transferencia'}
-                                </Badge>
+                                <div className="flex flex-col gap-1 items-start">
+                                    {/* Badge de Transferencia */}
+                                    <Badge color="blue" className="flex items-center gap-1 w-fit">
+                                        <span>↔</span> {tx.transfer_account_name}
+                                    </Badge>
+                                    
+                                    {/* Si tiene categoría asignada (ej: Hipoteca), mostrarla también */}
+                                    {tx.category && (
+                                        <span className="text-xs text-gray-600 ml-1">
+                                            Cat: <strong>{tx.category_name}</strong>
+                                        </span>
+                                    )}
+                                </div>
                             );
                         }
                         // Caso 2: Es Ajuste de Saldo (NUEVO)
