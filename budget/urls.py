@@ -16,4 +16,6 @@ urlpatterns = [
     path('budget_summary/', views.BudgetSummaryView.as_view(), name='budget_summary'),
     path('budget_assignment/', views.BudgetAssignmentView.as_view(), name='budget_assignment'),
     path('trigger_sync/', views.TriggerSyncView.as_view(), name='trigger_sync'),
+    path('import/preview/', views.ImportFileView.as_view(), name='import_preview'),
+    path('import/execute/', views.ExecuteImportView.as_view(), name='import_execute'),
 ]

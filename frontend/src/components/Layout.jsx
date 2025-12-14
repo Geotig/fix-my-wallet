@@ -90,7 +90,7 @@ const Layout = ({ children, currentView, setView, accounts = [] }) => {
 
           {/* --- ZONA INFERIOR --- */}
           {/* mt-auto empuja esto al fondo del espacio disponible */}
-          <div className="mt-auto px-3 pt-6 border-t border-gray-50">
+          <div className="mt-auto px-3 pt-6 border-t border-gray-50 pb-4">
             <div onClick={() => setView('settings')} className={navItemClass('settings')}>
               ⚙️ Configuración
             </div>

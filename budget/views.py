@@ -2,12 +2,14 @@ from django.db.models import Sum
 from django.db import transaction
 from django.core.management import call_command
 from django.db.models import Sum, Q
+from django.core.files.storage import default_storage
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import viewsets, views
 from datetime import datetime, date, timedelta
 from decimal import Decimal
 from collections import defaultdict
+from .import_service import preview_file, process_import
 
 # Importamos todos los modelos necesarios, incluyendo CategoryGroup
 from .models import Transaction, Account, Category, CategoryGroup, BudgetAssignment, Payee, EmailSource, EmailRule
@@ -375,3 +377,46 @@ class EmailSourceViewSet(viewsets.ModelViewSet):
 class EmailRuleViewSet(viewsets.ModelViewSet):
     queryset = EmailRule.objects.all()
     serializer_class = EmailRuleSerializer
+
+class ImportFileView(views.APIView):
+    def post(self, request):
+        """
+        Paso 1: Recibe archivo, devuelve columnas detectadas.
+        """
+        file_obj = request.FILES.get('file')
+        if not file_obj:
+            return Response({"error": "No se envió archivo"}, status=400)
+        
+        try:
+            # Leemos en memoria para preview
+            # (Si el archivo es gigante, esto podría optimizarse, pero para excels personales está bien)
+            data = preview_file(file_obj, file_obj.name)
+            return Response(data)
+        except Exception as e:
+            return Response({"error": str(e)}, status=400)
+
+class ExecuteImportView(views.APIView):
+    def post(self, request):
+        """
+        Paso 2: Recibe archivo + mapeo y procesa.
+        """
+        file_obj = request.FILES.get('file')
+        # El mapeo viene como string JSON dentro del form-data
+        import json
+        mapping = json.loads(request.data.get('mapping')) 
+        account_id = request.data.get('account_id')
+        
+        if not all([file_obj, mapping, account_id]):
+            return Response({"error": "Datos incompletos"}, status=400)
+
+        try:
+            account = Account.objects.get(pk=account_id)
+            report = process_import(file_obj, file_obj.name, mapping, account)
+            
+            return Response({
+                "status": "success", 
+                "imported": report['imported'],
+                "duplicated": report['duplicated'] # <--- ENVIAMOS AL FRONT
+            })
+        except Exception as e:
+            return Response({"error": str(e)}, status=500)
