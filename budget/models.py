@@ -60,6 +60,20 @@ class Category(models.Model):
     is_active = models.BooleanField(default=True)
     order = models.PositiveIntegerField(default=0)
     
+    class GoalType(models.TextChoices):
+        NONE = 'NONE', 'Sin Meta'
+        MONTHLY = 'MONTHLY', 'Ahorro Mensual Fijo'
+        TARGET_DATE = 'TARGET_DATE', 'Alcanzar Saldo para Fecha'
+        TARGET_BALANCE = 'TARGET_BALANCE', 'Mantener Saldo Mínimo'
+
+    goal_type = models.CharField(
+        max_length=20, 
+        choices=GoalType.choices, 
+        default=GoalType.NONE
+    )
+    goal_amount = models.DecimalField(max_digits=12, decimal_places=0, default=0)
+    goal_target_date = models.DateField(null=True, blank=True)
+
     class Meta:
         verbose_name_plural = "Categories"
         ordering = ['order', 'name']

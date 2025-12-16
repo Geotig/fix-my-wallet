@@ -5,6 +5,7 @@ import Button from './ui/Button';
 import Badge from './ui/Badge';
 import Modal from './ui/Modal';
 import Input from './ui/Input';
+import GoalForm from './GoalForm';
 
 const BudgetView = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -49,6 +50,38 @@ const BudgetView = () => {
   
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(amount);
+  };
+
+  const handleGoalSave = async (goalData) => {
+    try {
+        const res = await apiFetch(`/api/categories/${selectedItem.id}/`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(goalData)
+        });
+        
+        if (!res.ok) throw new Error("Error guardando meta");
+        
+        setModalOpen(false);
+        fetchBudget(); // Recargar para que el backend recalcule los requisitos
+    } catch (error) {
+        alert(error.message);
+    }
+  };
+
+  const openEditGoal = (cat) => {
+    setModalMode('edit_goal');
+
+    const goalDataForForm = {
+        goal_type: cat.goal.type,
+        goal_amount: cat.goal.target,
+    };
+    
+    apiFetch(`/api/categories/${cat.category_id}/`).then(res => res.json()).then(realCat => {
+        setSelectedItem(realCat);
+        setModalMode('edit_goal');
+        setModalOpen(true);
+    });
   };
 
   // --- LÓGICA DE GESTIÓN (CRUD) ---
@@ -119,9 +152,6 @@ const BudgetView = () => {
   };
 
   const handleAssignmentChange = async (categoryId, newAmount) => {
-    // ... (Lógica de asignación igual que antes, solo copiada aquí por completitud)
-    // Para simplificar el código del ejemplo, asumo que mantienes esta función como estaba
-    // Si la necesitas completa dímelo, pero es la misma del paso anterior.
     try {
       await apiFetch('/api/budget_assignment/', {
         method: 'POST',
@@ -132,11 +162,56 @@ const BudgetView = () => {
           amount: newAmount
         })
       });
-      // Recalculo local simplificado o fetch
       fetchBudget(); 
     } catch (error) {
         console.error(error);
     }
+  };
+
+  const GoalIndicator = ({ goal, available }) => { // <--- Agregamos prop 'available'
+    if (!goal || goal.type === 'NONE') return null;
+
+    const isMet = goal.is_met;
+    const percentage = goal.percentage || 0;
+    const isOverspent = available < 0; // <--- Detectar negativo
+    
+    // Lógica de Colores
+    let textColor = "text-amber-600";
+    let barColor = "bg-amber-400";
+    
+    if (isMet) {
+        textColor = "text-green-600";
+        barColor = "bg-green-500";
+    } else if (isOverspent) {
+        // NUEVO ESTADO: Rojo si hay deuda en la categoría
+        textColor = "text-red-600 font-bold";
+        barColor = "bg-red-200"; // Barra tenue roja o vacía (0%)
+    }
+
+    // Azul para Target Date al 100%
+    if (goal.type === 'TARGET_DATE' && percentage >= 100) {
+        textColor = "text-blue-600";
+        barColor = "bg-blue-500";
+    }
+
+    return (
+        <div className="mt-1.5 w-full max-w-[140px] animate-fade-in group/goal">
+            <div className={`text-[10px] font-bold mb-0.5 flex justify-between ${textColor}`}>
+                <span>{goal.message || "Meta"}</span>
+                {/* Solo mostramos % si es positivo, si es negativo (overspent) no tiene sentido mostrar 0% */}
+                <span className="opacity-0 group-hover/goal:opacity-100 transition-opacity">
+                    {percentage}%
+                </span>
+            </div>
+
+            <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden border border-gray-200">
+                <div 
+                    className={`h-full rounded-full transition-all duration-500 ease-out ${barColor}`}
+                    style={{ width: `${percentage}%` }} 
+                ></div> 
+            </div>
+        </div>
+    );
   };
 
   // --- RENDER ---
@@ -148,6 +223,8 @@ const BudgetView = () => {
       {/* Header RTA + Navegación */}
       <Card className="p-6 bg-white mb-6">
         <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+            
+            {/* Navegación Mes */}
             <div className="flex items-center space-x-4">
                 <Button variant="ghost" size="sm" onClick={() => changeMonth(-1)}>&lt;</Button>
                 <h2 className="text-2xl font-bold capitalize text-gray-800 w-48 text-center">
@@ -156,12 +233,19 @@ const BudgetView = () => {
                 <Button variant="ghost" size="sm" onClick={() => changeMonth(1)}>&gt;</Button>
             </div>
 
-            <div className="bg-blue-50 px-6 py-3 rounded-xl border border-blue-100 flex flex-col items-center min-w-[200px]">
-                <span className="text-xs font-bold text-blue-600 uppercase tracking-wider mb-1">
+            {/* RTA: Dinero por Asignar */}
+            <div className={`px-6 py-3 rounded-xl border flex flex-col items-center min-w-[200px] transition-colors ${
+                (budgetData?.ready_to_assign || 0) < 0 
+                ? 'bg-red-50 border-red-100' 
+                : 'bg-green-50 border-green-100'
+            }`}>
+                <span className={`text-xs font-bold uppercase tracking-wider mb-1 ${
+                     (budgetData?.ready_to_assign || 0) < 0 ? 'text-red-600' : 'text-green-600'
+                }`}>
                     Por Asignar
                 </span>
                 <span className={`text-3xl font-extrabold ${
-                    (budgetData?.ready_to_assign || 0) < 0 ? 'text-red-600' : 'text-green-600'
+                    (budgetData?.ready_to_assign || 0) < 0 ? 'text-red-700' : 'text-green-700'
                 }`}>
                     {budgetData && formatCurrency(budgetData.ready_to_assign)}
                 </span>
@@ -202,7 +286,7 @@ const BudgetView = () => {
                             </span>
                             <button 
                                 onClick={() => openCreateCategory(group)}
-                                className="text-gray-400 hover:text-blue-600 font-bold text-lg px-2"
+                                className="text-gray-400 hover:text-blue-600 font-bold text-lg px-2 opacity-0 group-hover:opacity-100 transition-opacity"
                                 title="Añadir Categoría a este grupo"
                             >
                                 +
@@ -212,21 +296,51 @@ const BudgetView = () => {
                 </tr>
 
                 {group.categories.map((cat) => (
-                  <tr key={cat.category_id} className="hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0">
-                    <td className="px-6 py-3 text-sm font-medium text-gray-900 pl-8">
-                        <span 
-                            className="cursor-pointer hover:text-blue-600 hover:underline decoration-dotted"
-                            onClick={() => openEditCategory(cat)}
-                        >
-                            {cat.category_name}
-                        </span>
+                  <tr key={cat.category_id} className="hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0 group/row">
+                    
+                    {/* Nombre y Meta */}
+                    <td className="px-6 py-3 text-sm font-medium text-gray-900 pl-8 relative">
+                        <div className="flex flex-col items-start">
+                            <div className="flex items-center gap-2">
+                                <span 
+                                    className="cursor-pointer hover:text-blue-600 hover:underline decoration-dotted"
+                                    onClick={() => openEditCategory(cat)}
+                                >
+                                    {cat.category_name}
+                                </span>
+                                
+                                {/* Botón Editar Meta (Visible en hover o si tiene meta activa) */}
+                                <button 
+                                    onClick={() => openEditGoal(cat)}
+                                    className={`transition-colors text-xs ${
+                                        cat.goal.type !== 'NONE' 
+                                        ? 'text-blue-400 hover:text-blue-600 opacity-100' 
+                                        : 'text-gray-300 hover:text-gray-500 opacity-0 group-hover/row:opacity-100'
+                                    }`}
+                                    title="Editar Meta"
+                                >
+                                    🎯
+                                </button>
+                            </div>
+                            
+                            {/* Indicador de Progreso de Meta */}
+                            <GoalIndicator
+                            goal={cat.goal}
+                            available={cat.available}
+                            />
+                        </div>
                     </td>
                     
+                    {/* Input Asignado */}
                     <td className="px-6 py-3 text-right">
                         <input 
                             type="number"
                             defaultValue={cat.assigned}
-                            className="w-28 text-right p-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm"
+                            className={`w-28 text-right p-1 border rounded focus:outline-none text-sm transition-colors
+                                ${!cat.goal.is_met && cat.goal.type !== 'NONE' 
+                                    ? 'border-yellow-400 bg-yellow-50 focus:ring-yellow-500 text-yellow-900' 
+                                    : 'border-gray-300 focus:ring-2 focus:ring-blue-500'}
+                            `}
                             onKeyDown={(e) => { if (e.key === 'Enter') e.target.blur(); }}
                             onBlur={(e) => {
                                 const val = parseFloat(e.target.value) || 0;
@@ -237,12 +351,17 @@ const BudgetView = () => {
                         />
                     </td>
 
-                    <td className="px-6 py-3 text-sm text-right text-gray-500">
+                    {/* Actividad */}
+                    <td className="px-6 py-3 text-sm text-right text-gray-500 font-mono">
                         {formatCurrency(cat.activity)}
                     </td>
                     
+                    {/* Disponible */}
                     <td className="px-6 py-3 text-right">
-                        <Badge color={cat.available < 0 ? 'red' : cat.available > 0 ? 'green' : 'gray'}>
+                        <Badge color={
+                            cat.available < 0 ? 'red' : 
+                            cat.available > 0 ? 'green' : 'gray'
+                        }>
                             {formatCurrency(cat.available)}
                         </Badge>
                     </td>
@@ -254,60 +373,61 @@ const BudgetView = () => {
         </table>
       </Card>
 
-      {/* MODAL DE GESTIÓN */}
+      {/* MODAL DE GESTIÓN (Híbrido) */}
       <Modal 
         isOpen={modalOpen} 
         onClose={() => setModalOpen(false)}
         title={
+            modalMode === 'edit_goal' ? `Meta: ${selectedItem?.name}` :
             modalMode === 'create_group' ? 'Crear Nuevo Grupo' :
             modalMode === 'edit_group' ? 'Editar Grupo' :
             modalMode === 'create_cat' ? 'Crear Categoría' : 'Editar Categoría'
         }
-        footer={
+        footer={modalMode !== 'edit_goal' && (
             <>
                 <Button variant="ghost" onClick={() => setModalOpen(false)}>Cancelar</Button>
-                {/* 
-                    CAMBIO 1: El botón ahora es tipo 'submit' y se vincula al form por ID.
-                    Esto permite que el botón esté en el footer (fuera del form) pero lo active igual.
-                */}
                 <Button type="submit" form="modal-form">Guardar</Button>
             </>
-        }
+        )}
       >
-        {/* 
-            CAMBIO 2: Usamos <form> en vez de <div>.
-            Agregamos un ID para vincularlo al botón y el evento onSubmit.
-        */}
-        <form 
-            id="modal-form" 
-            onSubmit={(e) => {
-                e.preventDefault(); // Evita que la página se recargue al dar Enter
-                handleModalSave();
-            }} 
-            className="space-y-4"
-        >
-            <Input 
-                label="Nombre"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                autoFocus
+        {modalMode === 'edit_goal' ? (
+            <GoalForm 
+                category={selectedItem} 
+                onSave={handleGoalSave} // Función que llama al PATCH
+                onCancel={() => setModalOpen(false)} 
             />
-            
-            {(modalMode === 'edit_group' || modalMode === 'edit_cat') && (
-                <div className="flex items-center gap-2 pt-2">
-                    <input 
-                        type="checkbox" 
-                        id="is_active"
-                        checked={!formData.is_active}
-                        onChange={(e) => setFormData({ ...formData, is_active: !e.target.checked })}
-                        className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                    />
-                    <label htmlFor="is_active" className="text-sm text-gray-700">
-                        Ocultar (Archivar)
-                    </label>
-                </div>
-            )}
-        </form>
+        ) : (
+            <form 
+                id="modal-form" 
+                onSubmit={(e) => {
+                    e.preventDefault();
+                    handleModalSave();
+                }} 
+                className="space-y-4"
+            >
+                <Input 
+                    label="Nombre"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    autoFocus
+                />
+                
+                {(modalMode === 'edit_group' || modalMode === 'edit_cat') && (
+                    <div className="flex items-center gap-2 pt-2 p-3 bg-gray-50 rounded border border-gray-100">
+                        <input 
+                            type="checkbox" 
+                            id="is_active"
+                            checked={!formData.is_active} // Invertido para UI "Ocultar"
+                            onChange={(e) => setFormData({ ...formData, is_active: !e.target.checked })}
+                            className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                        />
+                        <label htmlFor="is_active" className="text-sm font-medium text-gray-700 cursor-pointer">
+                            Ocultar (Archivar)
+                        </label>
+                    </div>
+                )}
+            </form>
+        )}
       </Modal>
     </div>
   );

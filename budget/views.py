@@ -195,6 +195,9 @@ class BudgetSummaryView(views.APIView):
 
         next_month = (target_month_start.replace(day=28) + timedelta(days=4)).replace(day=1)
         
+        def fmt(val):
+            return "{:,.0f}".format(val).replace(",", ".")
+    
         # --- 1. RTA ACUMULATIVO ---
         # CAMBIO TRACKING: Solo sumamos cuentas que NO son off_budget
         liquid_accounts = Account.objects.filter(
@@ -300,6 +303,86 @@ class BudgetSummaryView(views.APIView):
                     if monthly_payments > 0:
                         val_activity_month = -monthly_payments
 
+                # --- CÁLCULO DE META (GOAL) ---
+                goal_status = {
+                    "type": cat.goal_type,
+                    "target": cat.goal_amount,
+                    "required": 0,
+                    "is_met": False,
+                    "percentage": 0,
+                    "message": "" 
+                }
+
+                if cat.goal_type == 'MONTHLY':
+                    # Meta: Asignar X monto este mes
+                    goal_status["required"] = max(0, cat.goal_amount - val_assigned_this_month)
+                    goal_status["is_met"] = val_assigned_this_month >= cat.goal_amount
+                    raw_pct = int((val_assigned_this_month / cat.goal_amount) * 100) if cat.goal_amount > 0 else 0
+                    goal_status["percentage"] = max(0, min(100, raw_pct))
+                    
+                    if goal_status["is_met"]:
+                        goal_status["message"] = "Meta mensual cumplida"
+                    else:
+                        goal_status["message"] = f"Faltan ${fmt(goal_status['required'])}"
+
+                elif cat.goal_type == 'TARGET_BALANCE':
+                    # Meta: Que el disponible sea al menos X
+                    goal_status["required"] = max(0, cat.goal_amount - available_amount)
+                    goal_status["is_met"] = available_amount >= cat.goal_amount
+                    raw_pct = int((available_amount / cat.goal_amount) * 100) if cat.goal_amount > 0 else 0
+                    goal_status["percentage"] = max(0, min(100, raw_pct))
+                    
+                    if goal_status["is_met"]:
+                        goal_status["message"] = "Saldo objetivo alcanzado"
+                    else:
+                        goal_status["message"] = f"Falta juntar ${fmt(goal_status['required'])}"
+
+                elif cat.goal_type == 'TARGET_DATE' and cat.goal_target_date:
+                    # Lógica "On Track":
+                    # 1. ¿Cuánto tenía antes de empezar este mes? (Aprox)
+                    # Asumimos que lo asignado este mes es el aporte nuevo.
+                    # available_start = available_amount - val_assigned_this_month
+                    # (Nota: Esto asume que no hubo gastos este mes que bajaron el available, 
+                    # pero para metas de ahorro suele ser correcto).
+                    
+                    if available_amount >= cat.goal_amount:
+                        goal_status["is_met"] = True
+                        goal_status["percentage"] = 100
+                        goal_status["message"] = "¡Meta lograda! 🎉"
+                    else:
+                        # Cálculo de meses
+                        today_date = date.today()
+                        # Usamos la fecha target de la categoría
+                        target_dt = cat.goal_target_date
+                        
+                        # Meses restantes incluyendo el actual
+                        months_diff = (target_dt.year - target_month_start.year) * 12 + (target_dt.month - target_month_start.month) + 1
+                        months_remaining = max(1, months_diff)
+                        
+                        # Cuánto faltaba en total antes de asignar hoy
+                        # Si available < assigned (ej: gastaste), usamos 0 para no romper la lógica negativa
+                        balance_before_assignment = available_amount - val_assigned_this_month
+                        total_missing_at_start = max(0, cat.goal_amount - balance_before_assignment)
+                        
+                        # Cuota mensual sugerida
+                        monthly_suggested = total_missing_at_start / months_remaining
+                        
+                        # ¿Cumpliste la cuota de este mes?
+                        # Usamos un margen pequeño de error por decimales
+                        is_on_track = val_assigned_this_month >= (monthly_suggested - 1)
+                        
+                        goal_status["is_met"] = is_on_track
+                        goal_status["required"] = max(0, monthly_suggested - val_assigned_this_month)
+                        
+                        # Porcentaje del TOTAL acumulado
+                        raw_pct = int((available_amount / cat.goal_amount) * 100) if cat.goal_amount > 0 else 0
+                        goal_status["percentage"] = max(0, min(100, raw_pct))
+                        
+                        if is_on_track:
+                            goal_status["message"] = "Vas bien este mes 👍"
+                        else:
+                            goal_status["message"] = f"Aporta ${fmt(monthly_suggested)} este mes"
+
                 # Globales
                 total_assigned_month += val_assigned_this_month
                 total_activity_month += val_activity_month
@@ -310,7 +393,8 @@ class BudgetSummaryView(views.APIView):
                     "category_name": cat.name,
                     "assigned": val_assigned_this_month,
                     "activity": val_activity_month,
-                    "available": available_amount
+                    "available": available_amount,
+                    "goal": goal_status
                 })
             
             grouped_data.append({

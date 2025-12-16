@@ -25,7 +25,10 @@ class CategorySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Category
-        fields = ['id', 'name', 'group', 'group_name', 'is_active', 'order']
+        fields = [
+            'id', 'name', 'group', 'group_name', 'is_active', 'order',
+            'goal_type', 'goal_amount', 'goal_target_date'
+            ]
 
 class PayeeSerializer(serializers.ModelSerializer):
     class Meta:
