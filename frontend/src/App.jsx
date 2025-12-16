@@ -7,6 +7,7 @@ import Modal from './components/ui/Modal'
 import TransactionForm from './components/TransactionForm'
 import FileImportModal from './components/FileImportModal'
 import SettingsView from './components/SettingsView';
+import ReportsView from './components/ReportsView'
 import { apiFetch, API_URL } from './api'; // Importamos API_URL para limpiar links
 
 function App() {
@@ -156,9 +157,9 @@ function App() {
 
   const renderContent = () => {
     if (view === 'budget') return <BudgetView />;
-    // Pasamos fetchAllData (sin argumentos = full refresh) a AccountsView
     if (view === 'accounts') return <AccountsView onAccountsChange={() => fetchAllData()} />; 
     if (view === 'settings') return <SettingsView />;
+    if (view === 'reports') return <ReportsView />;
 
     return (
         <>

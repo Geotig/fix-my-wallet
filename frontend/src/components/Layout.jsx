@@ -69,7 +69,7 @@ const Layout = ({ children, currentView, setView, accounts = [] }) => {
             <div onClick={() => setView('accounts')} className={navItemClass('accounts')}>
               Gestión de Cuentas
             </div>
-            <div className="block py-2 px-4 rounded text-sm font-medium text-gray-400 cursor-not-allowed">
+            <div onClick={() => setView('reports')} className={navItemClass('reports')}>
               Reportes
             </div>
           </div>

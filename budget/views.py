@@ -10,6 +10,7 @@ from datetime import datetime, date, timedelta
 from decimal import Decimal
 from collections import defaultdict
 from .import_service import preview_file, process_import
+from dateutil.relativedelta import relativedelta
 
 # Importamos todos los modelos necesarios, incluyendo CategoryGroup
 from .models import Transaction, Account, Category, CategoryGroup, BudgetAssignment, Payee, EmailSource, EmailRule
@@ -503,3 +504,82 @@ class ExecuteImportView(views.APIView):
             })
         except Exception as e:
             return Response({"error": str(e)}, status=500)
+        
+class ReportsView(views.APIView):
+    def get(self, request):
+        report_type = request.query_params.get('type', 'net_worth')
+        
+        if report_type == 'net_worth':
+            return self.get_net_worth_data()
+        elif report_type == 'spending':
+            return self.get_spending_data()
+        
+        return Response({"error": "Tipo de reporte inválido"}, status=400)
+
+    def get_net_worth_data(self):
+        """
+        Calcula Activos, Pasivos y Neto para los últimos 12 meses.
+        """
+        today = date.today()
+        data = []
+
+        # Iteramos los últimos 12 meses (de pasado a presente)
+        for i in range(11, -1, -1):
+            # Fecha de corte: El último día del mes 'i'
+            # Truco: Primer día del mes actual - i meses, luego ir al último día
+            month_date = (today.replace(day=1) - relativedelta(months=i))
+            # Ultimo día del mes: (Mes siguiente día 1) - 1 día
+            end_of_month = (month_date + relativedelta(months=1)).replace(day=1) 
+            
+            # Filtro base: Transacciones ocurridas antes o en el fin de ese mes
+            history_filter = Q(date__lt=end_of_month)
+
+            # 1. Activos (Assets + Cash)
+            assets_val = Transaction.objects.filter(
+                history_filter,
+                account__account_type__in=['CHECKING', 'SAVINGS', 'CASH', 'ASSET']
+            ).aggregate(total=Sum('amount'))['total'] or 0
+
+            # 2. Pasivos (Liabilities + Credit Cards)
+            # Nota: Las deudas suelen ser negativas en la BD.
+            debts_val = Transaction.objects.filter(
+                history_filter,
+                account__account_type__in=['CREDIT', 'LOAN']
+            ).aggregate(total=Sum('amount'))['total'] or 0
+
+            data.append({
+                "month": month_date.strftime('%b %Y'), # Ej: "Dec 2025"
+                "Assets": assets_val,
+                "Debts": debts_val, # Se graficará negativo
+                "Net Worth": assets_val + debts_val
+            })
+
+        return Response(data)
+
+    def get_spending_data(self):
+        """
+        Agrupa gastos por Grupo de Categoría del mes actual (o rango seleccionado).
+        """
+        today = date.today()
+        start_date = today.replace(day=1)
+        
+        # Filtramos:
+        # 1. Fechas de este mes
+        # 2. Solo gastos (amount < 0)
+        # 3. Que tengan categoría (no pagos internos sin categoría)
+        # 4. Que NO sean transferencias internas
+        expenses = Transaction.objects.filter(
+            date__gte=start_date,
+            amount__lt=0,
+            category__isnull=False,
+            transfer_transaction__isnull=True
+        ).values('category__group__name').annotate(total=Sum('amount')).order_by('total')
+
+        data = []
+        for entry in expenses:
+            data.append({
+                "name": entry['category__group__name'],
+                "value": abs(entry['total']) # Convertir a positivo para el gráfico de torta
+            })
+
+        return Response(data)

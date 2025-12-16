@@ -18,4 +18,5 @@ urlpatterns = [
     path('trigger_sync/', views.TriggerSyncView.as_view(), name='trigger_sync'),
     path('import/preview/', views.ImportFileView.as_view(), name='import_preview'),
     path('import/execute/', views.ExecuteImportView.as_view(), name='import_execute'),
+    path('reports/', views.ReportsView.as_view(), name='reports'),
 ]
