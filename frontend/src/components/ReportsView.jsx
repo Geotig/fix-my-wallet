@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { apiFetch } from '../api';
 import Card from './ui/Card';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+import { useLocalization } from '../contexts/LocalizationContext';
 
 const ReportsView = () => {
+  const { formatCurrency } = useLocalization();
   const [activeTab, setActiveTab] = useState('net_worth');
   const [chartData, setChartData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -26,9 +28,6 @@ const ReportsView = () => {
     };
     fetchData();
   }, [activeTab]);
-
-  const formatCurrency = (value) => 
-    new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(value);
 
   return (
     <div className="space-y-6">

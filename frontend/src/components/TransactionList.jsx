@@ -3,12 +3,14 @@ import Card from './ui/Card';
 import CategorySelect from './CategorySelect';
 import Badge from './ui/Badge';
 import Button from './ui/Button';
+import { useLocalization } from '../contexts/LocalizationContext';
 
 const TransactionList = ({ transactions, categories, onTransactionUpdate, onLinkTransfer }) => {
+  const { formatCurrency } = useLocalization();
+
   const [selectedIds, setSelectedIds] = useState([]);
 
   // Formateadores (Mantenemos los mismos)
-  const formatCurrency = (amount) => new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(amount);
   const formatDate = (dateString) => {
     const [year, month, day] = dateString.split('-');
     return new Date(year, month - 1, day).toLocaleDateString('es-CL', { day: 'numeric', month: 'short' });

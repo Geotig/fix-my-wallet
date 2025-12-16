@@ -5,8 +5,12 @@ import Card from './ui/Card';
 import Input from './ui/Input';
 import Select from './ui/Select';
 import Badge from './ui/Badge';
+import { useLocalization } from '../contexts/LocalizationContext';
 
 const AccountsView = ({ onAccountsChange }) => {
+
+  const { formatCurrency } = useLocalization();
+
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -40,10 +44,6 @@ const AccountsView = ({ onAccountsChange }) => {
   useEffect(() => {
     fetchAccounts();
   }, []);
-
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(amount);
-  };
 
   const handleCreateAccount = async (e) => {
     e.preventDefault();

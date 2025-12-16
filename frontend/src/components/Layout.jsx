@@ -1,7 +1,10 @@
 import React from 'react';
+import { useLocalization } from '../contexts/LocalizationContext';
 
 const Layout = ({ children, currentView, setView, accounts = [] }) => {
   
+  const { formatCurrency } = useLocalization();
+
   console.log("Cuentas recibidas en Layout:", accounts);
 
   const navItemClass = (viewName, isMobile = false) => {
@@ -18,9 +21,6 @@ const Layout = ({ children, currentView, setView, accounts = [] }) => {
       }`;
     }
   };
-
-  // Helper para formatear moneda
-  const formatCurrency = (amount) => new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(amount);
 
   // Filtrar cuentas por grupo
   // 1. Presupuesto: On-Budget y que NO sean Crédito (Checking, Cash, Savings)

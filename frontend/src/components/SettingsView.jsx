@@ -6,9 +6,10 @@ import Badge from './ui/Badge';
 import Modal from './ui/Modal';
 import Input from './ui/Input';
 import Select from './ui/Select';
+import { useLocalization } from '../contexts/LocalizationContext';
 
 const SettingsView = () => {
-  const [activeTab, setActiveTab] = useState('sources'); // 'sources' | 'rules'
+  const [activeTab, setActiveTab] = useState('general'); // 'general ' | 'sources' | 'rules'
   
   const [sources, setSources] = useState([]);
   const [rules, setRules] = useState([]);
@@ -18,6 +19,15 @@ const SettingsView = () => {
   // Estados para Modales
   const [isSourceModalOpen, setIsSourceModalOpen] = useState(false);
   const [isRuleModalOpen, setIsRuleModalOpen] = useState(false);
+
+  // Obtener funciones del contexto
+  const { 
+    symbol, setSymbol, 
+    thousandSep, setThousandSep, 
+    decimalSep, setDecimalSep, 
+    decimals, setDecimals, 
+    formatCurrency 
+  } = useLocalization();
 
   // Formularios
   const [sourceForm, setSourceForm] = useState({
@@ -98,24 +108,92 @@ const SettingsView = () => {
   return (
     <div className="space-y-6">
       {/* Header con Pestañas */}
-      <div className="bg-white rounded-lg shadow p-2 flex gap-2">
+      <div className="bg-white rounded-lg shadow p-2 flex gap-2 overflow-x-auto">
+        <button
+            onClick={() => setActiveTab('general')}
+            className={`flex-1 py-2 px-4 rounded-md font-bold transition-colors whitespace-nowrap ${
+                activeTab === 'general' ? 'bg-blue-100 text-blue-700' : 'text-gray-500 hover:bg-gray-50'
+            }`}
+        >
+            🌍 Regional
+        </button>
         <button
             onClick={() => setActiveTab('sources')}
-            className={`flex-1 py-2 px-4 rounded-md font-bold transition-colors ${
+            className={`flex-1 py-2 px-4 rounded-md font-bold transition-colors whitespace-nowrap ${
                 activeTab === 'sources' ? 'bg-blue-100 text-blue-700' : 'text-gray-500 hover:bg-gray-50'
             }`}
         >
-            📡 Fuentes de Correo
+            📡 Fuentes
         </button>
         <button
             onClick={() => setActiveTab('rules')}
-            className={`flex-1 py-2 px-4 rounded-md font-bold transition-colors ${
+            className={`flex-1 py-2 px-4 rounded-md font-bold transition-colors whitespace-nowrap ${
                 activeTab === 'rules' ? 'bg-blue-100 text-blue-700' : 'text-gray-500 hover:bg-gray-50'
             }`}
         >
-            ⚙️ Reglas de Sincronización
+            ⚙️ Reglas
         </button>
       </div>
+
+      {/* --- CONTENIDO: GENERAL (REGIONAL) --- */}
+      {activeTab === 'general' && (
+        <Card className="p-6">
+            <h3 className="text-lg font-bold text-gray-800 mb-4">Configuración Regional</h3>
+            
+            <div className="grid md:grid-cols-2 gap-6">
+                <Input 
+                    label="Símbolo de Moneda" 
+                    placeholder="$" 
+                    value={symbol} 
+                    onChange={e => setSymbol(e.target.value)} 
+                />
+
+                <Select 
+                    label="Cantidad de Decimales" 
+                    value={decimals} 
+                    onChange={e => setDecimals(parseInt(e.target.value))}
+                >
+                    <option value="0">0 (Sin decimales)</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                </Select>
+
+                <Select 
+                    label="Separador de Miles" 
+                    value={thousandSep} 
+                    onChange={e => setThousandSep(e.target.value)}
+                >
+                    <option value=".">Punto (.)</option>
+                    <option value=",">Coma (,)</option>
+                    <option value="'">Apostrofe (')</option>
+                    <option value=" ">Espacio ( )</option>
+                </Select>
+
+                <Select 
+                    label="Separador de Decimales" 
+                    value={decimalSep} 
+                    onChange={e => setDecimalSep(e.target.value)}
+                >
+                    <option value=",">Coma (,)</option>
+                    <option value=".">Punto (.)</option>
+                </Select>
+            </div>
+
+            <div className="mt-8 p-4 bg-gray-50 rounded border border-gray-100">
+                <p className="text-sm text-gray-500 uppercase font-bold mb-2">Vista Previa:</p>
+                <div className="flex gap-8 items-center">
+                    <div>
+                        <span className="text-xs text-gray-400">Positivo</span>
+                        <div className="text-xl font-bold text-green-600">{formatCurrency(12500.50)}</div>
+                    </div>
+                    <div>
+                        <span className="text-xs text-gray-400">Negativo</span>
+                        <div className="text-xl font-bold text-red-600">{formatCurrency(-5430)}</div>
+                    </div>
+                </div>
+            </div>
+        </Card>
+      )}
 
       {/* CONTENIDO: FUENTES */}
       {activeTab === 'sources' && (
