@@ -163,39 +163,63 @@ function App() {
 
     return (
         <>
-            <div className="mb-6 flex justify-between items-center">
+            <div className="mb-4 md:mb-6 flex flex-col md:flex-row justify-between md:items-center gap-4">
                 <div>
-                    <h2 className="text-3xl font-bold text-gray-800">Transacciones</h2>
-                    <p className="text-gray-600">Clasifica tus gastos importados.</p>
+                    <h2 className="text-2xl md:text-3xl font-bold text-gray-800">Transacciones</h2>
+                    <p className="text-sm text-gray-600">Clasifica tus gastos importados.</p>
                 </div>
-                <div className="flex gap-2">
+                
+                {/* BARRA DE HERRAMIENTAS RESPONSIVA */}
+                <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
+                    
+                    {/* Botón Sincronizar (Icono en móvil, Texto en PC) */}
                     <button 
                         onClick={handleManualSync}
                         disabled={isSyncing}
-                        className={`text-sm px-3 py-2 rounded font-medium transition flex items-center gap-2 ${isSyncing ? 'bg-indigo-50 text-indigo-400 cursor-not-allowed' : 'bg-indigo-100 hover:bg-indigo-200 text-indigo-800'}`}
+                        className={`flex-1 md:flex-none justify-center text-sm px-3 py-2 rounded font-medium transition flex items-center gap-2 whitespace-nowrap
+                            ${isSyncing ? 'bg-indigo-50 text-indigo-400 cursor-not-allowed' : 'bg-indigo-100 hover:bg-indigo-200 text-indigo-800'}
+                        `}
+                        title="Sincronizar correos"
                     >
-                        {isSyncing ? 'Buscando...' : '☁️ Sincronizar'}
+                        {isSyncing ? (
+                            /* SVG del Spinner explícito */
+                            <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        ) : (
+                            <span>☁️</span>
+                        )}
+                        <span className="hidden md:inline">{isSyncing ? 'Buscando...' : 'Sincronizar'}</span>
                     </button>
 
+                    {/* Botón Refrescar */}
                     <button 
                         onClick={() => { setLoading(true); fetchAllData(); }}
-                        className="text-sm bg-gray-200 hover:bg-gray-300 px-3 py-2 rounded text-gray-700 font-medium transition"
+                        className="flex-1 md:flex-none justify-center text-sm bg-gray-200 hover:bg-gray-300 px-3 py-2 rounded text-gray-700 font-medium transition flex items-center gap-2"
+                        title="Refrescar datos"
                     >
-                        🔄 Refrescar
+                        <span>🔄</span>
+                        <span className="hidden md:inline">Refrescar</span>
                     </button>
                     
+                    {/* Botón Importar */}
                     <button 
                         onClick={() => setIsFileImportOpen(true)}
-                        className="text-sm bg-green-100 hover:bg-green-200 text-green-800 px-3 py-2 rounded font-medium transition flex items-center gap-2"
+                        className="flex-1 md:flex-none justify-center text-sm bg-green-100 hover:bg-green-200 text-green-800 px-3 py-2 rounded font-medium transition flex items-center gap-2"
+                        title="Importar Excel/CSV"
                     >
-                        📂 Importar
+                        <span>📂</span>
+                        <span className="hidden md:inline">Importar</span>
                     </button>
 
+                    {/* Botón Nueva (Texto visible siempre porque es la acción principal) */}
                     <button 
                         onClick={() => setIsTransactionModalOpen(true)}
-                        className="text-sm bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-bold shadow transition"
+                        className="flex-1 md:flex-none justify-center text-sm bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-bold shadow transition flex items-center gap-2 whitespace-nowrap"
                     >
-                        + Nueva
+                        <span>+</span>
+                        <span>Nueva</span>
                     </button>
                 </div>
             </div>

@@ -129,21 +129,34 @@ const Layout = ({ children, currentView, setView, accounts = [] }) => {
         </div>
       </main>
 
-      {/* --- BOTTOM NAVIGATION (Móvil) --- */}
-      {/* (Se mantiene igual que antes) */}
+      {/* --- BOTTOM NAVIGATION (Móvil - 5 Ítems) --- */}
       <nav className="md:hidden fixed bottom-0 w-full bg-white border-t border-gray-200 flex justify-around items-center z-50 pb-safe shadow-[0_-1px_3px_rgba(0,0,0,0.05)]">
+        
         <div onClick={() => setView('budget')} className={navItemClass('budget', true)}>
           <span className="text-xl mb-0.5">💰</span>
           <span className="text-[10px] font-bold">Presupuesto</span>
         </div>
+        
         <div onClick={() => setView('transactions')} className={navItemClass('transactions', true)}>
           <span className="text-xl mb-0.5">📄</span>
-          <span className="text-[10px] font-bold">Transacciones</span>
+          <span className="text-[10px] font-bold">Trans.</span> {/* Abreviado */}
         </div>
+        
         <div onClick={() => setView('accounts')} className={navItemClass('accounts', true)}>
           <span className="text-xl mb-0.5">💳</span>
           <span className="text-[10px] font-bold">Cuentas</span>
         </div>
+
+        <div onClick={() => setView('reports')} className={navItemClass('reports', true)}>
+          <span className="text-xl mb-0.5">📊</span>
+          <span className="text-[10px] font-bold">Reportes</span>
+        </div>
+
+        <div onClick={() => setView('settings')} className={navItemClass('settings', true)}>
+          <span className="text-xl mb-0.5">⚙️</span>
+          <span className="text-[10px] font-bold">Config.</span> {/* Abreviado */}
+        </div>
+
       </nav>
 
     </div>

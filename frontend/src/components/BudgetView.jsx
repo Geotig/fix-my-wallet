@@ -306,7 +306,7 @@ const BudgetView = () => {
       </Card>
 
       {/* Tabla de Presupuesto */}
-      <Card className="overflow-hidden">
+      <Card className="overflow-hidden hidden md:block">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
@@ -405,6 +405,62 @@ const BudgetView = () => {
           </tbody>
         </table>
       </Card>
+
+      {/* --- VISTA MÓVIL (Lista de Bloques) --- */}
+      <div className="md:hidden space-y-4 pb-20">
+        {budgetData?.groups.map((group) => (
+            <div key={group.group_id} className="space-y-2">
+                {/* Título del Grupo */}
+                <div className="px-2 pt-2 pb-1 text-xs font-bold text-gray-500 uppercase tracking-wider sticky top-0 bg-gray-100 z-10">
+                    {group.group_name}
+                </div>
+
+                {group.categories.map((cat) => (
+                    <Card key={cat.category_id} className="p-3 shadow-sm border border-gray-100">
+                        {/* Fila 1: Nombre y Disponible */}
+                        <div className="flex justify-between items-start mb-3">
+                            <div className="flex flex-col">
+                                <div className="font-bold text-gray-900 text-sm flex items-center gap-2">
+                                    <span onClick={() => openEditCategory(cat)}>{cat.category_name}</span>
+                                    <button onClick={() => openEditGoal(cat)} className="text-gray-300 hover:text-blue-500 text-xs">🎯</button>
+                                </div>
+                                <GoalIndicator goal={cat.goal} available={cat.available} />
+                            </div>
+                            
+                            <Badge color={cat.available < 0 ? 'red' : cat.available > 0 ? 'green' : 'gray'} className="text-sm px-2 py-1">
+                                {formatCurrency(cat.available)}
+                            </Badge>
+                        </div>
+
+                        {/* Fila 2: Inputs (Asignado y Actividad) */}
+                        <div className="flex items-center gap-3 bg-gray-50 p-2 rounded-md">
+                            <div className="flex-1">
+                                <label className="block text-[10px] text-gray-500 uppercase font-bold mb-0.5">Asignado</label>
+                                <input 
+                                    type="number"
+                                    defaultValue={cat.assigned}
+                                    className={`w-full text-right p-1.5 border rounded focus:outline-none text-sm font-semibold
+                                        ${!cat.goal.is_met && cat.goal.type !== 'NONE' ? 'border-yellow-400 bg-yellow-50 text-yellow-900' : 'border-gray-300'}
+                                    `}
+                                    onBlur={(e) => {
+                                        const val = parseFloat(e.target.value) || 0;
+                                        if (val !== parseFloat(cat.assigned)) handleAssignmentChange(cat.category_id, val);
+                                    }}
+                                />
+                            </div>
+                            
+                            <div className="flex-1 text-right border-l border-gray-200 pl-3">
+                                <label className="block text-[10px] text-gray-500 uppercase font-bold mb-0.5">Actividad</label>
+                                <span className="text-sm text-gray-600 font-mono block py-1.5">
+                                    {formatCurrency(cat.activity)}
+                                </span>
+                            </div>
+                        </div>
+                    </Card>
+                ))}
+            </div>
+        ))}
+      </div>
 
       {/* MODAL DE GESTIÓN */}
       <Modal 
